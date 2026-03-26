@@ -336,12 +336,13 @@ function cargarFechas(){
   const btn  = document.getElementById('btnBuscar');
 
   const hoy = new Date(); hoy.setHours(0,0,0,0);
-  const fin = new Date(hoy); fin.setMonth(fin.getMonth() + 6);
+  const fin = new Date(hoy); fin.setMonth(fin.getMonth() + 12);
 
   // Precomputar feriados para años involucrados
   const holidays = new Set([
     ...usHolidays(hoy.getFullYear()),
-    ...usHolidays(hoy.getFullYear() + 1)
+    ...usHolidays(hoy.getFullYear() + 1),
+    ...usHolidays(hoy.getFullYear() + 2)
   ]);
 
   // Encontrar próximo viernes
