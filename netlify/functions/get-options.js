@@ -1,73 +1,85 @@
 exports.handler = async function(event) {
-  const ticker = event.queryStringParameters?.ticker;
-  const expiry = event.queryStringParameters?.expiry; // YYYY-MM-DD
-  const TRADIER_KEY = process.env.TRADIER_API_KEY;
+  const ticker  = event.queryStringParameters?.ticker;
+  const expiry  = event.queryStringParameters?.expiry;
+  const hdrs    = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+  if (!ticker)  return { statusCode: 400, headers: hdrs, body: JSON.stringify({ error: 'ticker requerido' }) };
 
-  const hdrs = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
-
-  if (!ticker) return { statusCode: 400, headers: hdrs, body: JSON.stringify({ error: 'ticker requerido' }) };
-  if (!TRADIER_KEY) return { statusCode: 500, headers: hdrs, body: JSON.stringify({ error: 'TRADIER_API_KEY no configurada en Netlify' }) };
-
-  const TRADIER = 'https://api.tradier.com/v1/markets';
-  const AUTH = { 'Authorization': `Bearer ${TRADIER_KEY}`, 'Accept': 'application/json' };
+  const YH = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+    'Accept': 'application/json',
+    'Accept-Language': 'en-US,en;q=0.9',
+    'Referer': 'https://finance.yahoo.com/'
+  };
 
   try {
-    // 1. Precio actual de la acción
-    const quoteRes = await fetch(`${TRADIER}/quotes?symbols=${ticker}&greeks=false`, { headers: AUTH });
-    const quoteData = await quoteRes.json();
-    const q = quoteData?.quotes?.quote;
-    if (!q) throw new Error(`No se encontró el ticker ${ticker}`);
+    // 1. Precio actual
+    const qRes = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`,
+      { headers: YH }
+    );
+    if (!qRes.ok) throw new Error(`No se pudo obtener precio de ${ticker} (${qRes.status})`);
+    const qData = await qRes.json();
+    const meta  = qData?.chart?.result?.[0]?.meta;
+    if (!meta?.regularMarketPrice) throw new Error(`Ticker ${ticker} no encontrado`);
 
-    const stockPrice = q.last || q.close;
-    const stockChange = q.change_percentage || 0;
-    const high52 = q['52_week_high'] || 0;
-    const low52 = q['52_week_low'] || 0;
+    const stockPrice  = meta.regularMarketPrice;
+    const prevClose   = meta.chartPreviousClose || meta.previousClose || stockPrice;
+    const stockChange = ((stockPrice - prevClose) / prevClose * 100);
+    const high52      = meta.fiftyTwoWeekHigh || 0;
+    const low52       = meta.fiftyTwoWeekLow  || 0;
 
-    // 2. Expirations disponibles si no se pasó fecha
-    let useExpiry = expiry;
-    if (!useExpiry) {
-      const expRes = await fetch(`${TRADIER}/options/expirations?symbol=${ticker}&includeAllRoots=false`, { headers: AUTH });
-      const expData = await expRes.json();
-      const dates = expData?.expirations?.date;
-      if (!dates || dates.length === 0) throw new Error(`No hay vencimientos disponibles para ${ticker}`);
-      useExpiry = Array.isArray(dates) ? dates[0] : dates;
-    }
+    // 2. Opciones — si viene expiry usamos ese timestamp, sino Yahoo devuelve el más cercano
+    const expTimestamp = expiry ? Math.floor(new Date(expiry + 'T12:00:00').getTime() / 1000) : '';
+    const optUrl = `https://query2.finance.yahoo.com/v7/finance/options/${ticker}${expTimestamp ? '?date=' + expTimestamp : ''}`;
 
-    // 3. Cadena de opciones para esa fecha
-    const chainRes = await fetch(`${TRADIER}/options/chains?symbol=${ticker}&expiration=${useExpiry}&greeks=false`, { headers: AUTH });
-    const chainData = await chainRes.json();
-    const options = chainData?.options?.option;
-    if (!options) throw new Error(`No hay opciones para ${ticker} en ${useExpiry}`);
+    const oRes = await fetch(optUrl, { headers: YH });
+    if (!oRes.ok) throw new Error(`No se pudo obtener opciones (${oRes.status})`);
+    const oData = await oRes.json();
 
-    // Filtrar solo CALL OTM
-    const calls = (Array.isArray(options) ? options : [options])
-      .filter(o => o.option_type === 'call' && o.strike > stockPrice)
-      .sort((a, b) => a.strike - b.strike)
-      .slice(0, 10)
-      .map(o => {
-        let prima = o.last || 0;
-        if (prima === 0 && o.bid > 0 && o.ask > 0) prima = (o.bid + o.ask) / 2;
+    const result = oData?.optionChain?.result?.[0];
+    if (!result) throw new Error('Sin datos de opciones para ' + ticker);
+
+    const rawCalls = result?.options?.[0]?.calls || [];
+    const expirationDates = result.expirationDates || [];
+
+    // Fecha real del vencimiento que devolvió Yahoo
+    const actualTs   = result?.options?.[0]?.expirationDate || (expTimestamp || expirationDates[0]);
+    const actualDate = new Date(actualTs * 1000);
+    const expiryLabel = actualDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    const hoy  = new Date(); hoy.setHours(0,0,0,0);
+    const dias = Math.max(1, Math.ceil((actualDate - hoy) / 86400000));
+
+    // Filtrar calls OTM con precio
+    const calls = rawCalls
+      .map(c => {
+        let prima = (c.lastPrice && c.lastPrice > 0) ? c.lastPrice : 0;
+        if (!prima && c.bid > 0 && c.ask > 0) prima = (c.bid + c.ask) / 2;
         return {
-          strike: o.strike,
-          prima: parseFloat(prima.toFixed(2)),
-          bid: o.bid || null,
-          ask: o.ask || null,
-          volumen: o.volume || null,
-          oi: o.open_interest || null,
-          iv: o.greeks?.mid_iv ? parseFloat((o.greeks.mid_iv * 100).toFixed(1)) : null
+          strike:  parseFloat(c.strike),
+          prima:   parseFloat(prima.toFixed(2)),
+          bid:     c.bid   || null,
+          ask:     c.ask   || null,
+          volumen: c.volume        || null,
+          oi:      c.openInterest  || null,
+          iv:      c.impliedVolatility ? parseFloat((c.impliedVolatility * 100).toFixed(1)) : null
         };
       })
-      .filter(c => c.prima > 0);
+      .filter(c => c.strike > stockPrice && c.prima > 0)
+      .sort((a, b) => a.strike - b.strike)
+      .slice(0, 10);
 
-    // Formatear fecha para mostrar
-    const expDate = new Date(useExpiry + 'T12:00:00');
-    const expiryLabel = expDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const dias = Math.max(1, Math.ceil((expDate - hoy) / 86400000));
+    if (calls.length === 0) {
+      // Devolver los vencimientos disponibles para que el usuario elija
+      const available = expirationDates.map(ts => {
+        const d = new Date(ts * 1000);
+        return d.toISOString().split('T')[0];
+      });
+      throw new Error(`Sin calls OTM para ese vencimiento. Fechas disponibles: ${available.slice(0,6).join(', ')}`);
+    }
 
     return {
       statusCode: 200, headers: hdrs,
-      body: JSON.stringify({ ticker, stockPrice, stockChange, high52, low52, expiryLabel, expiry: useExpiry, dias, calls })
+      body: JSON.stringify({ ticker, stockPrice, stockChange, high52, low52, expiryLabel, dias, calls })
     };
 
   } catch (err) {
