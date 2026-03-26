@@ -238,34 +238,23 @@ async function fetchData() {
   const expDate = new Date(expiry + 'T00:00:00');
   const expLabel = expDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 
-  const prompt = `Necesito datos reales de Yahoo Finance para un análisis de covered calls.
+  // Timestamp Unix para la URL de Yahoo Finance
+  const expTimestamp = Math.floor(new Date(expiry + 'T00:00:00').getTime() / 1000);
 
-Acción: ${ticker}
-Fecha vencimiento opciones: ${expLabel} (en ${DIAS} días desde hoy)
+  const prompt = `Hacé búsquedas web para obtener datos reales de opciones de ${ticker} y devolveme un JSON.
 
-Buscá y devolvé:
-1. Precio actual (last price) de ${ticker}
-2. Variación % del día de ${ticker}
-3. 52 week high y 52 week low de ${ticker}
-4. Las 10 opciones CALL out-of-the-money más cercanas al precio actual, para el vencimiento ${expLabel}. Solo las que tengan strike MAYOR al precio actual. Para cada call: strike, last price (prima), bid, ask, volumen, open interest.
+PASO 1 - Precio acción: buscá "${ticker} stock price yahoo finance"
+PASO 2 - Opciones: buscá "${ticker} options chain calls ${expLabel}" y también intentá fetchear https://finance.yahoo.com/quote/${ticker}/options/?date=${expTimestamp}
 
-IMPORTANTE: Si el last price de una opción es 0 o no tiene operaciones recientes, calculá el mid entre bid y ask como prima.
+Con los datos encontrados completá este JSON con valores numéricos reales:
 
-Respondé ÚNICAMENTE con este JSON, sin texto antes ni después, sin markdown:
-{
-  "ticker": "${ticker}",
-  "stockPrice": <número>,
-  "stockChange": <número % cambio del día>,
-  "high52": <número>,
-  "low52": <número>,
-  "expiryLabel": "${expLabel}",
-  "dias": ${DIAS},
-  "calls": [
-    { "strike": <número>, "prima": <número>, "bid": <número o null>, "ask": <número o null>, "volumen": <número o null>, "oi": <número o null> }
-  ]
-}
+{"ticker":"${ticker}","stockPrice":0,"stockChange":0,"high52":0,"low52":0,"expiryLabel":"${expLabel}","dias":${DIAS},"calls":[{"strike":0,"prima":0,"bid":0,"ask":0,"volumen":0,"oi":0}]}
 
-Ordenar calls de menor a mayor strike. Máximo 10 calls, todas con strike > precio actual.`;
+Reglas:
+- calls: solo CALL con strike > stockPrice (OTM), ordenadas de menor a mayor strike, máximo 10
+- Si last price es 0, usá (bid+ask)/2 como prima
+- Si no hay datos para ${expLabel}, usá el vencimiento más cercano disponible y actualizá expiryLabel
+- Devolvé SOLO el JSON, sin texto adicional, sin markdown, sin backticks\`;
 
   try {
     const res = await fetch('/.netlify/functions/claude-proxy', {
