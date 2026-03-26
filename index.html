@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CoveredCall.io · Analizador de TNA</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;600;800;900&display=swap');
+
+  :root {
+    --bg: #070709;
+    --s1: #0e0e14;
+    --s2: #16161f;
+    --s3: #1e1e2a;
+    --border: #252533;
+    --border2: #303045;
+    --acc: #c8ff57;
+    --acc2: #ff5757;
+    --acc3: #57b8ff;
+    --acc4: #ffaa57;
+    --text: #ddddf0;
+    --muted: #5a5a7a;
+    --muted2: #3a3a55;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+  }
+
+  /* ── TOPBAR ── */
+  .topbar {
+    background: var(--s1);
+    border-bottom: 1px solid var(--border);
+    padding: 0 20px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-shrink: 0;
+    overflow-x: auto;
+  }
+
+  .logo {
+    font-family: 'Syne', sans-serif;
+    font-weight: 900;
+    font-size: 15px;
+    letter-spacing: -0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .logo em { color: var(--acc); font-style: normal; }
+
+  .divider { width: 1px; height: 24px; background: var(--border); flex-shrink: 0; }
+
+  .field-wrap { display: flex; align-items: center; gap: 7px; }
+  .lbl { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; white-space: nowrap; }
+
+  .inp {
+    background: var(--s3);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    padding: 7px 10px;
+    border-radius: 4px;
+    outline: none;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .inp:focus { border-color: var(--acc); box-shadow: 0 0 0 2px rgba(200,255,87,0.1); }
+  .inp.ticker { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; color: var(--acc); width: 90px; letter-spacing: 1px; text-transform: uppercase; }
+  .inp.strike { width: 90px; }
+  .inp.expiry { width: 140px; }
+
+  .btn-fetch {
+    background: var(--acc);
+    color: #070709;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 9px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .btn-fetch:hover:not(:disabled) { background: #d9ff6e; transform: translateY(-1px); }
+  .btn-fetch:active:not(:disabled) { transform: translateY(0); }
+  .btn-fetch:disabled { opacity: 0.45; cursor: wait; }
+
+  .pill {
+    font-size: 10px;
+    padding: 4px 10px;
+    border-radius: 20px;
+    letter-spacing: 0.5px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .pill-idle { background: var(--s3); color: var(--muted); }
+  .pill-loading { background: rgba(200,255,87,0.1); color: var(--acc); border: 1px solid rgba(200,255,87,0.3); animation: pillpulse 1s ease-in-out infinite; }
+  .pill-ok { background: rgba(200,255,87,0.12); color: var(--acc); border: 1px solid rgba(200,255,87,0.25); }
+  .pill-err { background: rgba(255,87,87,0.12); color: var(--acc2); border: 1px solid rgba(255,87,87,0.25); }
+
+  @keyframes pillpulse { 0%,100%{opacity:1} 50%{opacity:0.5} }
+
+  /* ── MAIN ── */
+  .main {
+    display: grid;
+    grid-template-columns: 268px 1fr;
+    flex: 1;
+    overflow: hidden;
+    min-height: 0;
+  }
+
+  /* ── SIDEBAR ── */
+  .sidebar {
+    background: var(--s1);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .card {
+    background: var(--s2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .card.accent { border-color: rgba(200,255,87,0.4); }
+
+  .card-head {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    font-size: 9px;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-family: 'Syne', sans-serif;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .card-head.acc { color: var(--acc); }
+
+  .card-body { padding: 12px; }
+
+  .price-big {
+    font-family: 'Syne', sans-serif;
+    font-weight: 900;
+    font-size: 30px;
+    color: var(--acc);
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+
+  .price-chg { font-size: 11px; margin-top: 5px; }
+  .pos { color: #4dff8f; }
+  .neg { color: var(--acc2); }
+  .neu { color: var(--acc3); }
+  .warn-c { color: var(--acc4); }
+
+  .stat { display: flex; justify-content: space-between; align-items: center; padding: 5px 0; border-bottom: 1px solid var(--muted2); font-size: 11px; }
+  .stat:last-child { border-bottom: none; }
+  .stat-l { color: var(--muted); }
+  .stat-v { font-weight: 700; }
+
+  .tna-hero {
+    font-family: 'Syne', sans-serif;
+    font-weight: 900;
+    font-size: 40px;
+    color: var(--acc);
+    text-align: center;
+    padding: 14px 0 2px;
+    line-height: 1;
+    letter-spacing: -1px;
+  }
+  .tna-sub { text-align: center; font-size: 9px; color: var(--muted); letter-spacing: 1.5px; margin-bottom: 12px; text-transform: uppercase; }
+
+  .mini-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+  .mini-box { background: var(--s3); border-radius: 4px; padding: 8px 10px; }
+  .mini-box .mv { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 13px; margin-top: 3px; }
+
+  /* ── CONTENT ── */
+  .content {
+    overflow-y: auto;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    background: var(--bg);
+  }
+
+  .splash {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px;
+    flex: 1;
+    gap: 14px;
+    color: var(--muted);
+    text-align: center;
+    padding: 40px;
+  }
+  .splash-icon { font-size: 44px; opacity: 0.25; }
+  .splash-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; opacity: 0.35; }
+  .splash-sub { font-size: 11px; opacity: 0.3; line-height: 1.8; max-width: 340px; }
+
+  .loading-bar {
+    height: 2px;
+    width: 220px;
+    background: linear-gradient(90deg, transparent 0%, var(--acc) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.1s linear infinite;
+    border-radius: 2px;
+  }
+  @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  .charts-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .ch-card {
+    background: var(--s1);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 14px;
+  }
+  .ch-title {
+    font-family: 'Syne', sans-serif;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    color: var(--muted);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .ch-note { font-size: 9px; color: var(--muted); margin-top: 6px; text-align: right; }
+
+  .tbl-card { background: var(--s1); border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+  .tbl-head { padding: 10px 14px; border-bottom: 1px solid var(--border); font-family: 'Syne', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
+
+  table { width: 100%; border-collapse: collapse; font-size: 11px; }
+  thead th { background: var(--s3); padding: 7px 12px; text-align: right; font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; border-bottom: 1px solid var(--border2); }
+  thead th:first-child { text-align: left; }
+  tbody td { padding: 7px 12px; text-align: right; border-bottom: 1px solid rgba(37,37,51,0.5); }
+  tbody td:first-child { text-align: left; }
+  tbody tr:hover { background: rgba(255,255,255,0.015); }
+  tbody tr.hl { background: rgba(200,255,87,0.04); }
+  tbody tr.hl td { color: var(--acc); }
+
+  .chip { display: inline-block; padding: 2px 7px; border-radius: 2px; font-size: 9px; font-weight: 700; font-family: 'Syne', sans-serif; }
+  .chi { background: rgba(200,255,87,0.15); color: var(--acc); }
+  .chm { background: rgba(87,184,255,0.15); color: var(--acc3); }
+  .chl { background: rgba(255,170,87,0.15); color: var(--acc4); }
+
+  .warn-banner { background: rgba(255,170,87,0.07); border: 1px solid rgba(255,170,87,0.2); border-radius: 4px; padding: 8px 12px; font-size: 10px; color: var(--acc4); line-height: 1.6; }
+
+  .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--acc); display: inline-block; animation: dpulse 2s infinite; }
+  @keyframes dpulse { 0%,100%{opacity:1} 50%{opacity:0.2} }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">COVERED<em>CALL</em>.io</div>
+    <div class="divider"></div>
+    <div class="field-wrap">
+      <span class="lbl">Ticker</span>
+      <input class="inp ticker" id="ticker" value="META" maxlength="5" placeholder="META" oninput="this.value=this.value.toUpperCase()">
+    </div>
+    <div class="field-wrap">
+      <span class="lbl">Strike</span>
+      <input class="inp strike" id="strikeIn" type="number" value="600" step="1" placeholder="600">
+    </div>
+    <div class="field-wrap">
+      <span class="lbl">Vencimiento</span>
+      <input class="inp expiry" id="expiryIn" type="date" value="2026-04-24">
+    </div>
+    <button class="btn-fetch" id="btnFetch" onclick="fetchData()">⚡ BUSCAR DATOS</button>
+    <span class="pill pill-idle" id="statusPill">En espera</span>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div id="sbSplash" class="splash" style="min-height:200px">
+        <div class="splash-icon">📡</div>
+        <div class="splash-title" style="font-size:13px">Sin datos</div>
+        <div class="splash-sub">Ingresá el ticker, strike y vencimiento arriba.</div>
+      </div>
+      <div id="sbData" style="display:none"></div>
+    </div>
+
+    <!-- CONTENT -->
+    <div class="content">
+      <div id="ctSplash" class="splash">
+        <div class="splash-icon">📈</div>
+        <div class="splash-title">Analizador de Covered Calls</div>
+        <div class="splash-sub">
+          Ingresá el ticker, strike y fecha de vencimiento.<br>
+          Buscamos el último precio operado en Yahoo Finance<br>
+          y calculamos la TNA con curvas y tablas completas.
+        </div>
+      </div>
+      <div id="ctData" style="display:none"></div>
+    </div>
+
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script>
+// ─── utilidades ───────────────────────────────────────────────
+let charts = {};
+
+function dc(id) { if (charts[id]) { charts[id].destroy(); delete charts[id]; } }
+
+function days(dateStr) {
+  const t = new Date(); t.setHours(0,0,0,0);
+  return Math.max(1, Math.ceil((new Date(dateStr+'T00:00:00') - t) / 86400000));
+}
+
+function tna(prem, spot, d) {
+  const r = prem / spot;
+  return { r, tna: r * (365 / d) };
+}
+
+function estPrem(spot, s, d, basePrem, baseStrike, baseDays) {
+  const mAdj = 1 + ((baseStrike - s) / spot) * 1.8;
+  const tAdj = Math.sqrt(d / baseDays);
+  return Math.max(0.05, basePrem * mAdj * tAdj);
+}
+
+function badge(t) {
+  const p = (t * 100).toFixed(1);
+  if (t >= 0.25) return `<span class="chip chi">${p}%</span>`;
+  if (t >= 0.12) return `<span class="chip chm">${p}%</span>`;
+  return `<span class="chip chl">${p}%</span>`;
+}
+
+function setStatus(txt, type) {
+  const el = document.getElementById('statusPill');
+  el.textContent = txt;
+  el.className = 'pill pill-' + type;
+}
+
+function fmt(n, dec=2) { return parseFloat(n).toLocaleString('en-US', {minimumFractionDigits:dec, maximumFractionDigits:dec}); }
+
+const CHART_BASE = {
+  responsive: true, animation: { duration: 450 },
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { color: 'rgba(37,37,51,0.9)' }, ticks: { color: '#5a5a7a', font: { family: 'Space Mono', size: 9 }, maxTicksLimit: 8 } },
+    y: { grid: { color: 'rgba(37,37,51,0.9)' }, ticks: { color: '#5a5a7a', font: { family: 'Space Mono', size: 9 } } }
+  }
+};
+
+function copts(unit='%', dollar=false) {
+  return { ...CHART_BASE,
+    scales: { ...CHART_BASE.scales,
+      y: { ...CHART_BASE.scales.y,
+        ticks: { ...CHART_BASE.scales.y.ticks,
+          callback: v => (dollar ? '$' : '') + fmt(v, dollar ? 0 : 1) + (dollar ? '' : unit)
+        }
+      }
+    }
+  };
+}
+
+// ─── fetch via Netlify function ────────────────────────────────
+async function fetchData() {
+  const ticker  = document.getElementById('ticker').value.toUpperCase().trim();
+  const strike  = parseFloat(document.getElementById('strikeIn').value);
+  const expiry  = document.getElementById('expiryIn').value;
+
+  if (!ticker || !strike || !expiry) { alert('Completá todos los campos'); return; }
+
+  const btn = document.getElementById('btnFetch');
+  btn.disabled = true;
+  setStatus('Consultando...', 'loading');
+
+  document.getElementById('sbSplash').style.display = 'flex';
+  document.getElementById('sbData').style.display = 'none';
+  document.getElementById('ctSplash').style.display = 'flex';
+  document.getElementById('ctData').style.display = 'none';
+  document.getElementById('ctSplash').innerHTML = `
+    <div class="splash-icon">⏳</div>
+    <div class="splash-title">Buscando datos de ${ticker}...</div>
+    <div class="loading-bar"></div>
+    <div class="splash-sub">Claude está consultando Yahoo Finance para obtener<br>el último precio de la acción y la opción CALL ${strike}.</div>
+  `;
+
+  const d = days(expiry);
+  const expDate = new Date(expiry + 'T00:00:00');
+  const expLabel = expDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+
+  const prompt = `Buscá en Yahoo Finance el precio actual (último operado) de la acción ${ticker} y el precio (last price) de la opción CALL con strike $${strike} y vencimiento ${expLabel} (aprox ${d} días).
+
+También buscá: bid, ask, volumen de la opción, open interest, IV (implied volatility) si está disponible, cambio porcentual del día de la acción, 52W high y 52W low.
+
+Respondé ÚNICAMENTE con un JSON válido, sin texto extra, sin markdown, sin backticks:
+{
+  "ticker": "${ticker}",
+  "stockPrice": <número>,
+  "stockChange": <número porcentaje cambio del día>,
+  "stockHigh52": <número>,
+  "stockLow52": <número>,
+  "optionPremium": <número - last price de la opción>,
+  "optionBid": <número o null>,
+  "optionAsk": <número o null>,
+  "optionVolume": <número o null>,
+  "optionOI": <número o null>,
+  "optionIV": <número porcentaje o null>,
+  "strike": ${strike},
+  "expiryDays": ${d},
+  "expiryLabel": "${expLabel}",
+  "dataNote": "<nota breve sobre fuente o disponibilidad>"
+}`;
+
+  try {
+    const res = await fetch('/.netlify/functions/claude-proxy', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    let rawText = '';
+    for (const block of data.content) {
+      if (block.type === 'text') rawText += block.text;
+    }
+
+    const jsonMatch = rawText.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No se pudo parsear la respuesta');
+
+    const appData = JSON.parse(jsonMatch[0]);
+    appData.expiry = expiry;
+
+    setStatus(`${ticker} · $${fmt(appData.stockPrice)}`, 'ok');
+    btn.disabled = false;
+    render(appData);
+
+  } catch (err) {
+    console.error(err);
+    setStatus('Error', 'err');
+    btn.disabled = false;
+    document.getElementById('ctSplash').innerHTML = `
+      <div class="splash-icon">⚠️</div>
+      <div class="splash-title">Error al obtener datos</div>
+      <div class="splash-sub">${err.message}<br><br>Verificá el ticker o intentá de nuevo.</div>
+    `;
+  }
+}
+
+// ─── render ────────────────────────────────────────────────────
+function render(d) {
+  const { stockPrice, strike, expiryDays, optionPremium, optionBid, optionAsk,
+          optionVolume, optionOI, optionIV, stockChange, stockHigh52, stockLow52,
+          ticker, expiryLabel, dataNote } = d;
+
+  const prem = optionPremium || (optionBid && optionAsk ? (optionBid + optionAsk) / 2 : 0);
+  const { r, tna: T } = tna(prem, stockPrice, expiryDays);
+  const be = (stockPrice - prem).toFixed(2);
+  const maxG = ((strike - stockPrice + prem) * 100).toFixed(0);
+  const otmPct = (((strike / stockPrice) - 1) * 100).toFixed(1);
+  const midStr = (optionBid && optionAsk) ? '$' + fmt((optionBid + optionAsk) / 2) : 'N/D';
+
+  // ── sidebar ──
+  document.getElementById('sbSplash').style.display = 'none';
+  const sb = document.getElementById('sbData');
+  sb.style.display = 'flex';
+  sb.style.flexDirection = 'column';
+  sb.style.gap = '10px';
+  sb.innerHTML = `
+    <div class="card">
+      <div class="card-head"><span class="dot"></span> ${ticker} · Precio actual</div>
+      <div class="card-body">
+        <div class="price-big">$${fmt(stockPrice)}</div>
+        <div class="price-chg ${stockChange >= 0 ? 'pos' : 'neg'}">${stockChange >= 0 ? '▲' : '▼'} ${Math.abs(stockChange).toFixed(2)}% hoy</div>
+        <div style="margin-top:10px">
+          <div class="stat"><span class="stat-l">52W High</span><span class="stat-v">$${stockHigh52 ? fmt(stockHigh52) : 'N/D'}</span></div>
+          <div class="stat"><span class="stat-l">52W Low</span><span class="stat-v">$${stockLow52 ? fmt(stockLow52) : 'N/D'}</span></div>
+          <div class="stat"><span class="stat-l">Moneyness</span><span class="stat-v ${strike > stockPrice ? 'pos' : 'neg'}">${strike > stockPrice ? '+' : ''}${otmPct}% ${strike > stockPrice ? 'OTM' : 'ITM'}</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">CALL $${strike} · ${expiryLabel}</div>
+      <div class="card-body">
+        <div class="stat"><span class="stat-l">Last</span><span class="stat-v" style="color:var(--acc)">$${fmt(prem)}</span></div>
+        <div class="stat"><span class="stat-l">Bid / Ask</span><span class="stat-v">${optionBid ? '$'+fmt(optionBid) : '—'} / ${optionAsk ? '$'+fmt(optionAsk) : '—'}</span></div>
+        <div class="stat"><span class="stat-l">Mid</span><span class="stat-v">${midStr}</span></div>
+        <div class="stat"><span class="stat-l">Volumen</span><span class="stat-v">${optionVolume ? parseInt(optionVolume).toLocaleString() : 'N/D'}</span></div>
+        <div class="stat"><span class="stat-l">Open Interest</span><span class="stat-v">${optionOI ? parseInt(optionOI).toLocaleString() : 'N/D'}</span></div>
+        <div class="stat"><span class="stat-l">IV</span><span class="stat-v neu">${optionIV ? optionIV.toFixed(1)+'%' : 'N/D'}</span></div>
+        <div class="stat"><span class="stat-l">Días al vto.</span><span class="stat-v">${expiryDays}d</span></div>
+      </div>
+    </div>
+
+    <div class="card accent">
+      <div class="card-head acc">⚡ TNA DEL LANZAMIENTO</div>
+      <div class="card-body">
+        <div class="tna-hero">${(T * 100).toFixed(2)}%</div>
+        <div class="tna-sub">anualizada · ${expiryDays} días</div>
+        <div class="mini-grid">
+          <div class="mini-box">
+            <div class="lbl">Rendimiento</div>
+            <div class="mv pos">${(r * 100).toFixed(2)}%</div>
+          </div>
+          <div class="mini-box">
+            <div class="lbl">Breakeven</div>
+            <div class="mv warn-c">$${be}</div>
+          </div>
+          <div class="mini-box">
+            <div class="lbl">Máx ganancia</div>
+            <div class="mv neu">$${maxG}</div>
+          </div>
+          <div class="mini-box">
+            <div class="lbl">Prima x lote</div>
+            <div class="mv pos">$${(prem * 100).toFixed(0)}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    ${dataNote ? `<div class="warn-banner">ℹ️ ${dataNote}</div>` : ''}
+  `;
+
+  // ── content ──
+  document.getElementById('ctSplash').style.display = 'none';
+  const ct = document.getElementById('ctData');
+  ct.style.display = 'flex';
+  ct.style.flexDirection = 'column';
+  ct.style.gap = '14px';
+
+  // Datos para curvas
+  const stArr = []; for (let s = strike - 50; s <= strike + 51; s += 5) stArr.push(s);
+  const prArr = []; for (let p = 0.5; p <= prem * 3 + 0.01; p += prem * 3 / 24) prArr.push(parseFloat(p.toFixed(2)));
+  const plPrices = []; const plVals = [];
+  for (let p = stockPrice * 0.75; p <= stockPrice * 1.25 + 0.01; p += stockPrice * 0.5 / 30) {
+    plPrices.push(p.toFixed(0));
+    plVals.push((p <= strike ? (p - stockPrice + prem) * 100 : (strike - stockPrice + prem) * 100).toFixed(0));
+  }
+  const plazos = [7, 14, 21, 30, 45, 60, 90, 120, 180, 270];
+  const plazoLbl = ['1s','2s','3s','1m','45d','2m','3m','4m','6m','9m'];
+
+  ct.innerHTML = `
+    <div class="charts-2">
+      <div class="ch-card">
+        <div class="ch-title">TNA vs Prima recibida · strike ${strike} · ${expiryDays}d</div>
+        <canvas id="ch1" height="155"></canvas>
+        <div class="ch-note">Prima actual $${fmt(prem)} → TNA ${(T*100).toFixed(2)}%</div>
+      </div>
+      <div class="ch-card">
+        <div class="ch-title">TNA vs Strike · prima estimada · ${expiryDays}d</div>
+        <canvas id="ch2" height="155"></canvas>
+        <div class="ch-note">Strike actual $${strike} → TNA ${(T*100).toFixed(2)}%</div>
+      </div>
+      <div class="ch-card">
+        <div class="ch-title">P&L al vencimiento · 1 contrato (100 acciones)</div>
+        <canvas id="ch3" height="155"></canvas>
+        <div class="ch-note">BE: $${be} · Máx: $${maxG}</div>
+      </div>
+      <div class="ch-card">
+        <div class="ch-title">TNA estimada por plazo · strike ${strike} fijo</div>
+        <canvas id="ch4" height="155"></canvas>
+        <div class="ch-note">Prima proporcional a √tiempo</div>
+      </div>
+    </div>
+
+    <div class="tbl-card">
+      <div class="tbl-head">Curva de strikes · prima estimada por moneyness</div>
+      <table>
+        <thead><tr><th>Strike</th><th>Moneyness</th><th>Prima est.</th><th>Rend.</th><th>TNA</th><th>Breakeven</th><th>Máx (1 lote)</th></tr></thead>
+        <tbody id="t1"></tbody>
+      </table>
+    </div>
+
+    <div class="tbl-card">
+      <div class="tbl-head">Comparativo de plazos · strike ${strike} fijo</div>
+      <table>
+        <thead><tr><th>Plazo</th><th>Días</th><th>Prima est.</th><th>TNA est.</th><th>Rend. período</th><th>Prima (1 lote)</th></tr></thead>
+        <tbody id="t2"></tbody>
+      </table>
+    </div>
+
+    <div class="warn-banner">⚠️ Las primas en curvas y comparativos son estimaciones teóricas. El strike/prima ingresados calculan TNA exacta. Verificá siempre las primas reales en tu broker antes de operar.</div>
+  `;
+
+  // Chart 1
+  dc('c1');
+  charts['c1'] = new Chart(document.getElementById('ch1'), {
+    type: 'line',
+    data: {
+      labels: prArr.map(p => '$'+p),
+      datasets: [
+        { data: prArr.map(p => (tna(p, stockPrice, expiryDays).tna * 100).toFixed(2)), borderColor: '#c8ff57', backgroundColor: 'rgba(200,255,87,0.05)', borderWidth: 2, pointRadius: 1.5, fill: true, tension: 0.35 },
+        { data: Array(prArr.length).fill((T * 100).toFixed(2)), borderColor: '#ff5757', borderDash: [4,4], borderWidth: 1.5, pointRadius: 0, fill: false }
+      ]
+    }, options: copts('%')
+  });
+
+  // Chart 2
+  dc('c2');
+  charts['c2'] = new Chart(document.getElementById('ch2'), {
+    type: 'line',
+    data: {
+      labels: stArr.map(s => '$'+s),
+      datasets: [{ data: stArr.map(s => { const ep = estPrem(stockPrice, s, expiryDays, prem, strike, expiryDays); return (tna(ep, stockPrice, expiryDays).tna * 100).toFixed(2); }), borderColor: '#57b8ff', backgroundColor: 'rgba(87,184,255,0.05)', borderWidth: 2, pointRadius: 1.5, fill: true, tension: 0.35 }]
+    }, options: copts('%')
+  });
+
+  // Chart 3
+  dc('c3');
+  charts['c3'] = new Chart(document.getElementById('ch3'), {
+    type: 'line',
+    data: {
+      labels: plPrices.map(p => '$'+p),
+      datasets: [
+        { data: plVals, borderColor: '#c8ff57', segment: { borderColor: ctx => ctx.p0.parsed.y < 0 ? '#ff5757' : '#c8ff57' }, backgroundColor: 'rgba(200,255,87,0.04)', borderWidth: 2.5, pointRadius: 0, fill: true, tension: 0.1 },
+        { data: Array(plPrices.length).fill(0), borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, pointRadius: 0, fill: false }
+      ]
+    }, options: copts('', true)
+  });
+
+  // Chart 4
+  dc('c4');
+  const c4d = plazos.map(dd => { const ep = estPrem(stockPrice, strike, dd, prem, strike, expiryDays); return (tna(ep, stockPrice, dd).tna * 100).toFixed(2); });
+  charts['c4'] = new Chart(document.getElementById('ch4'), {
+    type: 'bar',
+    data: {
+      labels: plazoLbl,
+      datasets: [{ data: c4d, backgroundColor: c4d.map(v => v >= 25 ? 'rgba(200,255,87,0.55)' : v >= 12 ? 'rgba(87,184,255,0.55)' : 'rgba(255,170,87,0.55)'), borderColor: c4d.map(v => v >= 25 ? '#c8ff57' : v >= 12 ? '#57b8ff' : '#ffaa57'), borderWidth: 1, borderRadius: 3 }]
+    }, options: copts('%')
+  });
+
+  // Tabla 1
+  const t1 = document.getElementById('t1');
+  stArr.forEach(s => {
+    const ep = estPrem(stockPrice, s, expiryDays, prem, strike, expiryDays);
+    const { r: rr, tna: tt } = tna(ep, stockPrice, expiryDays);
+    const mm = s > stockPrice ? `+${(((s/stockPrice)-1)*100).toFixed(1)}% OTM` : s < stockPrice ? `${(((s/stockPrice)-1)*100).toFixed(1)}% ITM` : 'ATM';
+    const mg = ((s - stockPrice + ep) * 100).toFixed(0);
+    const hl = Math.abs(s - strike) < 0.01;
+    const tr = document.createElement('tr');
+    if (hl) tr.className = 'hl';
+    tr.innerHTML = `<td><b>$${s}</b>${hl ? ' ◀' : ''}</td><td>${mm}</td><td>$${fmt(ep)}</td><td>${(rr*100).toFixed(2)}%</td><td>${badge(tt)}</td><td>$${(stockPrice - ep).toFixed(2)}</td><td style="color:${mg>0?'var(--acc)':'var(--acc2)'}">$${mg}</td>`;
+    t1.appendChild(tr);
+  });
+
+  // Tabla 2
+  const t2 = document.getElementById('t2');
+  const pl2 = ['1 semana','2 semanas','3 semanas','1 mes','45 días','2 meses','3 meses','4 meses','6 meses','9 meses'];
+  plazos.forEach((dd, i) => {
+    const ep = estPrem(stockPrice, strike, dd, prem, strike, expiryDays);
+    const { r: rr, tna: tt } = tna(ep, stockPrice, dd);
+    const hl = dd === expiryDays;
+    const tr = document.createElement('tr');
+    if (hl) tr.className = 'hl';
+    tr.innerHTML = `<td>${pl2[i]}</td><td>${dd}d</td><td>$${fmt(ep)}</td><td>${badge(tt)}</td><td>${(rr*100).toFixed(2)}%</td><td>$${(ep*100).toFixed(0)}</td>`;
+    t2.appendChild(tr);
+  });
+}
+</script>
+</body>
+</html>
