@@ -153,6 +153,7 @@
   /* CHARTS */
   .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
   .ch-card { background: var(--s1); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
+  .ch-card canvas { background: var(--s1) !important; border-radius: 4px; }
   .ch-title { font-family: 'Syne', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
 
   .warn { background: rgba(255,170,87,0.06); border: 1px solid rgba(255,170,87,0.2); border-radius: 6px; padding: 10px 14px; font-size: 10px; color: var(--acc4); line-height: 1.8; }
@@ -216,7 +217,7 @@
     <button class="btn-clear" onclick="limpiar()">✕ Limpiar</button>
 
     <div class="warn">
-      💡 TNA = (Prima ÷ Precio Acción) ÷ Días × 365<br>
+      💡 TNA = ((Strike + Prima) ÷ Precio Acción − 1) ÷ Días × 365<br>
       Ingresá los precios desde tu broker (IBKR, TOS, etc).
     </div>
 
@@ -282,6 +283,10 @@ function badge(tna) {
 }
 
 let charts = {};
+
+// Set Chart.js defaults for dark theme
+Chart.defaults.backgroundColor = 'transparent';
+Chart.defaults.color = '#5a5a7a';
 function dc(id) { if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
 
 function calcular() {
@@ -302,8 +307,8 @@ function calcular() {
     const strike = parseFloat(document.getElementById('s'+i).value);
     const prima  = parseFloat(document.getElementById('p'+i).value);
     if (!isNaN(strike) && !isNaN(prima) && strike > 0 && prima > 0) {
-      // TNA = (prima / stockPrice) / dias * 365
-      const rendimiento = prima / stockPrice;
+      // TNA = ((strike + prima) / stockPrice - 1) / dias * 365
+      const rendimiento = (strike + prima) / stockPrice - 1;
       const tna = rendimiento / DIAS * 365;
       const otmPct = ((strike / stockPrice) - 1) * 100;
       const beLanzador = stockPrice - prima;
@@ -339,7 +344,7 @@ function calcular() {
     </div>
 
     <div class="formula">
-      📐 <b>TNA = (Prima ÷ Precio Acción) ÷ Días × 365</b><br>
+      📐 <b>TNA = ((Strike + Prima) ÷ Precio Acción − 1) ÷ Días × 365</b><br>
       Mejor base: Strike <b>$${fmt(ejR.strike)}</b> · Prima <b>$${fmt(ejR.prima)}</b> → Rend. <b>${(ejR.rendimiento*100).toFixed(2)}%</b> → TNA <b style="color:#fff;font-size:13px">${(ejR.tna*100).toFixed(2)}%</b>
     </div>
 
@@ -416,7 +421,11 @@ function calcular() {
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw + '% TNA' } } },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ctx.raw + '% TNA' } },
+        customCanvasBackgroundColor: { color: 'transparent' }
+      },
       scales: {
         x: { grid: { color: 'rgba(37,37,51,0.8)' }, ticks: { color: '#5a5a7a', font: { family: 'Space Mono', size: 10 } } },
         y: { grid: { color: 'rgba(37,37,51,0.8)' }, ticks: { color: '#5a5a7a', font: { family: 'Space Mono', size: 10 }, callback: v => v + '%' } }
