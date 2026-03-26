@@ -2,20 +2,58 @@ exports.handler = async function(event) {
   const ticker  = event.queryStringParameters?.ticker;
   const expiry  = event.queryStringParameters?.expiry;
   const hdrs    = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
-  if (!ticker)  return { statusCode: 400, headers: hdrs, body: JSON.stringify({ error: 'ticker requerido' }) };
+  if (!ticker) return { statusCode: 400, headers: hdrs, body: JSON.stringify({ error: 'ticker requerido' }) };
 
-  const YH = {
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-    'Accept': 'application/json',
-    'Accept-Language': 'en-US,en;q=0.9',
-    'Referer': 'https://finance.yahoo.com/'
-  };
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
   try {
-    // 1. Precio actual
-    const qRes = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d`,
-      { headers: YH }
+    // PASO 1: obtener cookie + crumb desde Yahoo
+    let cookie = '';
+    let crumb  = '';
+
+    // Primer request a Yahoo para obtener cookie de sesión
+    const initRes = await fetch('https://finance.yahoo.com/quote/' + ticker, {
+      headers: {
+        'User-Agent': UA,
+        'Accept': 'text/html,application/xhtml+xml',
+        'Accept-Language': 'en-US,en;q=0.9'
+      },
+      redirect: 'follow'
+    });
+
+    // Extraer cookie del header set-cookie
+    const setCookie = initRes.headers.get('set-cookie') || '';
+    // Buscar cookie A1 o similar que Yahoo usa para autenticación
+    const cookieParts = setCookie.split(',').map(c => c.trim().split(';')[0]);
+    cookie = cookieParts.filter(c => c.includes('=')).join('; ');
+
+    // PASO 2: obtener crumb usando la cookie
+    const crumbRes = await fetch('https://query1.finance.yahoo.com/v1/test/csrfToken', {
+      headers: {
+        'User-Agent': UA,
+        'Accept': 'application/json',
+        'Cookie': cookie
+      }
+    });
+    if (crumbRes.ok) {
+      crumb = (await crumbRes.text()).trim();
+      // El crumb a veces viene en JSON
+      try { const j = JSON.parse(crumb); crumb = j.crumb || crumb; } catch(e) {}
+    }
+
+    const reqHeaders = {
+      'User-Agent': UA,
+      'Accept': 'application/json',
+      'Accept-Language': 'en-US,en;q=0.9',
+      'Referer': 'https://finance.yahoo.com/',
+      ...(cookie ? { 'Cookie': cookie } : {})
+    };
+
+    // PASO 3: precio actual
+    const crumbParam = crumb ? `&crumb=${encodeURIComponent(crumb)}` : '';
+    const qRes  = await fetch(
+      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d${crumbParam}`,
+      { headers: reqHeaders }
     );
     if (!qRes.ok) throw new Error(`No se pudo obtener precio de ${ticker} (${qRes.status})`);
     const qData = await qRes.json();
@@ -28,28 +66,25 @@ exports.handler = async function(event) {
     const high52      = meta.fiftyTwoWeekHigh || 0;
     const low52       = meta.fiftyTwoWeekLow  || 0;
 
-    // 2. Opciones — si viene expiry usamos ese timestamp, sino Yahoo devuelve el más cercano
+    // PASO 4: opciones
     const expTimestamp = expiry ? Math.floor(new Date(expiry + 'T12:00:00').getTime() / 1000) : '';
-    const optUrl = `https://query2.finance.yahoo.com/v7/finance/options/${ticker}${expTimestamp ? '?date=' + expTimestamp : ''}`;
+    const optUrl = `https://query1.finance.yahoo.com/v7/finance/options/${ticker}${expTimestamp ? '?date=' + expTimestamp + crumbParam.replace('&','&') : (crumb ? '?' + crumbParam.slice(1) : '')}`;
 
-    const oRes = await fetch(optUrl, { headers: YH });
-    if (!oRes.ok) throw new Error(`No se pudo obtener opciones (${oRes.status})`);
+    const oRes  = await fetch(optUrl, { headers: reqHeaders });
+    if (!oRes.ok) throw new Error(`Opciones no disponibles (${oRes.status}). Intentá de nuevo.`);
     const oData = await oRes.json();
 
-    const result = oData?.optionChain?.result?.[0];
-    if (!result) throw new Error('Sin datos de opciones para ' + ticker);
+    const result   = oData?.optionChain?.result?.[0];
+    if (!result)   throw new Error('Sin datos de opciones para ' + ticker);
 
-    const rawCalls = result?.options?.[0]?.calls || [];
+    const rawCalls        = result?.options?.[0]?.calls || [];
     const expirationDates = result.expirationDates || [];
+    const actualTs        = result?.options?.[0]?.expirationDate || expirationDates[0];
+    const actualDate      = new Date(actualTs * 1000);
+    const expiryLabel     = actualDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+    const hoy             = new Date(); hoy.setHours(0,0,0,0);
+    const dias            = Math.max(1, Math.ceil((actualDate - hoy) / 86400000));
 
-    // Fecha real del vencimiento que devolvió Yahoo
-    const actualTs   = result?.options?.[0]?.expirationDate || (expTimestamp || expirationDates[0]);
-    const actualDate = new Date(actualTs * 1000);
-    const expiryLabel = actualDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-    const hoy  = new Date(); hoy.setHours(0,0,0,0);
-    const dias = Math.max(1, Math.ceil((actualDate - hoy) / 86400000));
-
-    // Filtrar calls OTM con precio
     const calls = rawCalls
       .map(c => {
         let prima = (c.lastPrice && c.lastPrice > 0) ? c.lastPrice : 0;
@@ -57,10 +92,10 @@ exports.handler = async function(event) {
         return {
           strike:  parseFloat(c.strike),
           prima:   parseFloat(prima.toFixed(2)),
-          bid:     c.bid   || null,
-          ask:     c.ask   || null,
-          volumen: c.volume        || null,
-          oi:      c.openInterest  || null,
+          bid:     c.bid          || null,
+          ask:     c.ask          || null,
+          volumen: c.volume       || null,
+          oi:      c.openInterest || null,
           iv:      c.impliedVolatility ? parseFloat((c.impliedVolatility * 100).toFixed(1)) : null
         };
       })
@@ -69,12 +104,10 @@ exports.handler = async function(event) {
       .slice(0, 10);
 
     if (calls.length === 0) {
-      // Devolver los vencimientos disponibles para que el usuario elija
-      const available = expirationDates.map(ts => {
-        const d = new Date(ts * 1000);
-        return d.toISOString().split('T')[0];
-      });
-      throw new Error(`Sin calls OTM para ese vencimiento. Fechas disponibles: ${available.slice(0,6).join(', ')}`);
+      const available = expirationDates
+        .map(ts => new Date(ts * 1000).toISOString().split('T')[0])
+        .slice(0, 6).join(', ');
+      throw new Error(`Sin calls OTM para ese vencimiento. Fechas disponibles: ${available}`);
     }
 
     return {
