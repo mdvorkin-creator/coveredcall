@@ -405,8 +405,14 @@ function render(d){
         </div>
         <div class="bb-panel">
           <div class="bb-panel-header">
-            <span class="bb-panel-title">P&amp;L AT EXPIRY · $${fmt(rows[0].strike,0)}</span>
-            <span class="bb-panel-sub">1 CONTRACT · 100 SHARES</span>
+            <span class="bb-panel-title">P&amp;L AT EXPIRY</span>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
+              <span class="bb-panel-sub">STRIKE:</span>
+              <select id="plStrikeSelect" onchange="updatePL(rows,stockPrice)" style="background:#000;border:1px solid var(--border2);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;padding:2px 5px;outline:none;cursor:pointer">
+                ${rows.map((r,i)=>`<option value="${i}">$${fmt(r.strike,0)} · TNA ${(r.tna*100).toFixed(1)}%</option>`).join('')}
+              </select>
+              <span class="bb-panel-sub">1 LOTE · 100 ACC</span>
+            </div>
           </div>
           <div class="ch-wrap"><canvas id="chPL" height="${mobile?110:155}"></canvas></div>
         </div>
@@ -546,20 +552,48 @@ function render(d){
     }
   });
 
-  // Chart P&L
-  dc('c2');
-  const S=stockPrice,K=rows[0].strike,P=rows[0].prima;
-  const plL=[],plV=[];
-  for(let p=S*.78;p<=S*1.22;p+=S*.44/50){plL.push('$'+fmt(p,0));plV.push(parseFloat((Math.min(K-S+P,p-S+P)*100).toFixed(0)));}
-  charts['c2']=new Chart(document.getElementById('chPL'),{
-    type:'line',
-    data:{labels:plL,datasets:[
-      {data:plV,borderColor:'#f5821f',segment:{borderColor:ctx=>ctx.p0.parsed.y<0?'#e8002d':'#f5821f'},backgroundColor:'rgba(245,130,31,.05)',borderWidth:2,pointRadius:0,fill:true,tension:.1},
-      {data:Array(plL.length).fill(0),borderColor:'rgba(255,255,255,.1)',borderWidth:1,pointRadius:0,fill:false}
-    ]},
-    options:{...COPTS,plugins:{...COPTS.plugins,tooltip:{callbacks:{label:ctx=>'$'+parseFloat(ctx.raw).toLocaleString()+' P&L'}}},
-      scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>'$'+v}}}}
-  });
+  // P&L chart — callable with any row
+  window.updatePL = function(rowsRef, spot) {
+    const sel = document.getElementById('plStrikeSelect');
+    const idx = sel ? parseInt(sel.value) : 0;
+    const row = rowsRef[idx];
+    if (!row) return;
+    const S=spot, K=row.strike, P=row.prima;
+    const plL=[],plV=[];
+    for(let p=S*.78;p<=S*1.22;p+=S*.44/50){
+      plL.push('$'+fmt(p,0));
+      plV.push(parseFloat((Math.min(K-S+P,p-S+P)*100).toFixed(0)));
+    }
+    dc('c2');
+    charts['c2']=new Chart(document.getElementById('chPL'),{
+      type:'line',
+      data:{labels:plL,datasets:[
+        {data:plV,borderColor:'#f5821f',segment:{borderColor:ctx=>ctx.p0.parsed.y<0?'#e8002d':'#f5821f'},backgroundColor:'rgba(245,130,31,.05)',borderWidth:2,pointRadius:0,fill:true,tension:.1},
+        {data:Array(plL.length).fill(0),borderColor:'rgba(255,255,255,.1)',borderWidth:1,pointRadius:0,fill:false}
+      ]},
+      options:{...COPTS,
+        plugins:{...COPTS.plugins,
+          tooltip:{callbacks:{
+            label:ctx=>{
+              const pl=parseFloat(ctx.raw);
+              return `P&L: $${pl.toLocaleString()} | ${pl>=0?'+':''}${(pl/S).toFixed(2)}%`;
+            }
+          }}
+        },
+        scales:{...COPTS.scales,
+          x:{...COPTS.scales.x,
+            afterDataLimits(axis){
+              // mark BE and strike on chart
+            }
+          },
+          y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>'$'+v}}
+        }
+      }
+    });
+  };
+
+  // Draw P&L with first strike by default
+  updatePL(rows, stockPrice);
 }
 </script>
 </body>
