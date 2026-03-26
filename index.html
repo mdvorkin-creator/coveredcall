@@ -8,23 +8,13 @@
   @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;800;900&display=swap');
 
   :root {
-    --bg: #070709;
-    --s1: #0e0e14;
-    --s2: #16161f;
-    --s3: #1e1e2a;
-    --border: #252533;
-    --acc: #c8ff57;
-    --acc2: #ff5757;
-    --acc3: #57b8ff;
-    --acc4: #ffaa57;
-    --text: #ddddf0;
-    --muted: #5a5a7a;
+    --bg: #070709; --s1: #0e0e14; --s2: #16161f; --s3: #1e1e2a;
+    --border: #252533; --acc: #c8ff57; --acc2: #ff5757; --acc3: #57b8ff; --acc4: #ffaa57;
+    --text: #ddddf0; --muted: #5a5a7a;
   }
-
   * { box-sizing: border-box; margin: 0; padding: 0; }
   html, body { background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; min-height: 100vh; }
 
-  /* TOPBAR */
   .topbar {
     background: var(--s1); border-bottom: 1px solid var(--border);
     padding: 0 24px; height: 56px; display: flex; align-items: center; gap: 16px;
@@ -32,113 +22,74 @@
   }
   .logo { font-family: 'Syne', sans-serif; font-weight: 900; font-size: 16px; }
   .logo em { color: var(--acc); font-style: normal; }
+  .divider { width: 1px; height: 24px; background: var(--border); }
 
-  /* LAYOUT */
-  .page { display: grid; grid-template-columns: 380px 1fr; min-height: calc(100vh - 56px); }
-
-  /* PANEL IZQUIERDO */
-  .panel {
-    background: var(--s1); border-right: 1px solid var(--border);
-    padding: 20px; display: flex; flex-direction: column; gap: 16px;
-    overflow-y: auto;
-  }
-
-  .sec-title {
-    font-family: 'Syne', sans-serif; font-size: 9px; font-weight: 600;
-    letter-spacing: 2px; color: var(--muted); text-transform: uppercase; margin-bottom: 8px;
-  }
-
-  .field { display: flex; flex-direction: column; gap: 5px; }
-  .field label { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-  .field input {
+  .field-wrap { display: flex; align-items: center; gap: 7px; }
+  .lbl { font-size: 9px; color: var(--muted); letter-spacing: 1.5px; text-transform: uppercase; white-space: nowrap; }
+  .inp {
     background: var(--s3); border: 1px solid var(--border); color: var(--text);
-    font-family: 'Space Mono', monospace; font-size: 13px; padding: 8px 10px;
+    font-family: 'Space Mono', monospace; font-size: 12px; padding: 7px 10px;
     border-radius: 4px; outline: none; transition: border-color 0.15s;
   }
-  .field input:focus { border-color: var(--acc); }
-  .field input.ticker-inp { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 15px; color: var(--acc); text-transform: uppercase; }
+  .inp:focus { border-color: var(--acc); box-shadow: 0 0 0 2px rgba(200,255,87,0.1); }
+  .inp.ticker { font-family: 'Syne', sans-serif; font-weight: 800; font-size: 14px; color: var(--acc); width: 90px; text-transform: uppercase; }
+  .inp.expiry { width: 145px; }
 
-  .fields-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-  /* TABLA DE ENTRADA */
-  .strikes-table { width: 100%; border-collapse: collapse; }
-  .strikes-table thead th {
-    background: var(--s3); padding: 7px 10px; text-align: center;
-    font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
+  .btn {
+    background: var(--acc); color: #070709; border: none;
+    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 11px;
+    letter-spacing: 1px; padding: 9px 20px; border-radius: 4px; cursor: pointer;
+    text-transform: uppercase; transition: all 0.15s; white-space: nowrap;
   }
-  .strikes-table tbody td { padding: 3px 4px; }
-  .strikes-table tbody td:first-child { width: 28px; text-align: center; font-size: 10px; color: var(--muted); padding-top: 6px; }
-  .strike-inp, .prima-inp {
-    width: 100%; background: var(--s3); border: 1px solid var(--border);
-    color: var(--text); font-family: 'Space Mono', monospace; font-size: 12px;
-    padding: 6px 8px; border-radius: 4px; outline: none; text-align: right;
-    transition: border-color 0.15s;
-  }
-  .strike-inp:focus, .prima-inp:focus { border-color: var(--acc); }
-  .strike-inp::placeholder, .prima-inp::placeholder { color: var(--muted); font-size: 11px; }
+  .btn:hover:not(:disabled) { background: #d9ff6e; transform: translateY(-1px); }
+  .btn:disabled { opacity: 0.45; cursor: wait; }
 
-  .btn-calc {
-    width: 100%; background: var(--acc); color: #070709; border: none;
-    font-family: 'Syne', sans-serif; font-weight: 800; font-size: 12px;
-    letter-spacing: 1px; padding: 12px; border-radius: 4px; cursor: pointer;
-    text-transform: uppercase; transition: all 0.15s;
-  }
-  .btn-calc:hover { background: #d9ff6e; transform: translateY(-1px); }
+  .pill { font-size: 10px; padding: 4px 10px; border-radius: 20px; white-space: nowrap; }
+  .pill-idle { background: var(--s3); color: var(--muted); }
+  .pill-loading { background: rgba(200,255,87,0.1); color: var(--acc); border: 1px solid rgba(200,255,87,0.3); animation: pp 1s infinite; }
+  .pill-ok { background: rgba(200,255,87,0.12); color: var(--acc); border: 1px solid rgba(200,255,87,0.25); }
+  .pill-err { background: rgba(255,87,87,0.12); color: var(--acc2); border: 1px solid rgba(255,87,87,0.25); }
+  @keyframes pp { 0%,100%{opacity:1} 50%{opacity:0.4} }
 
-  .btn-clear {
-    width: 100%; background: transparent; color: var(--muted); border: 1px solid var(--border);
-    font-family: 'Syne', sans-serif; font-weight: 600; font-size: 11px;
-    padding: 8px; border-radius: 4px; cursor: pointer; transition: all 0.15s;
-  }
-  .btn-clear:hover { border-color: var(--acc2); color: var(--acc2); }
+  .content { padding: 24px; display: flex; flex-direction: column; gap: 18px; max-width: 1300px; margin: 0 auto; }
 
-  /* CONTENIDO DERECHO */
-  .content { padding: 20px; display: flex; flex-direction: column; gap: 16px; overflow-y: auto; }
+  .splash { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 70vh; gap: 12px; color: var(--muted); text-align: center; }
+  .splash-icon { font-size: 48px; opacity: 0.2; }
+  .splash-title { font-family: 'Syne', sans-serif; font-size: 20px; font-weight: 800; opacity: 0.3; }
+  .splash-sub { font-size: 11px; opacity: 0.3; line-height: 2; }
+  .loading-bar { height: 2px; width: 220px; background: linear-gradient(90deg, transparent, var(--acc), transparent); background-size: 200%; animation: shimmer 1.1s linear infinite; border-radius: 2px; }
+  @keyframes shimmer { 0%{background-position:200%} 100%{background-position:-200%} }
 
-  .splash {
-    display: flex; flex-direction: column; align-items: center; justify-content: center;
-    min-height: 60vh; gap: 12px; color: var(--muted); text-align: center;
-  }
-  .splash-icon { font-size: 44px; opacity: 0.2; }
-  .splash-title { font-family: 'Syne', sans-serif; font-size: 18px; font-weight: 800; opacity: 0.3; }
-  .splash-sub { font-size: 11px; opacity: 0.3; line-height: 1.9; }
-
-  /* RESULTADO HEADER */
+  /* HEADER RESULTADO */
   .res-header {
     background: var(--s1); border: 1px solid var(--border); border-radius: 8px;
-    padding: 18px 22px; display: flex; align-items: center; gap: 28px; flex-wrap: wrap;
+    padding: 20px 24px; display: flex; align-items: center; gap: 32px; flex-wrap: wrap;
   }
-  .res-ticker { font-family: 'Syne', sans-serif; font-weight: 900; font-size: 28px; color: var(--acc); }
-  .res-price { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 22px; }
-  .res-meta { display: flex; gap: 24px; margin-left: auto; flex-wrap: wrap; }
+  .res-ticker { font-family: 'Syne', sans-serif; font-weight: 900; font-size: 32px; color: var(--acc); letter-spacing: -1px; }
+  .res-price { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 26px; }
+  .res-chg { font-size: 12px; margin-top: 4px; }
+  .pos { color: #4dff8f; } .neg { color: var(--acc2); }
+  .res-meta { display: flex; gap: 28px; margin-left: auto; flex-wrap: wrap; }
   .rm { text-align: center; }
   .rm-l { font-size: 9px; color: var(--muted); letter-spacing: 1px; text-transform: uppercase; }
-  .rm-v { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 14px; margin-top: 2px; }
+  .rm-v { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 15px; margin-top: 3px; }
 
   /* FORMULA */
   .formula {
     background: rgba(200,255,87,0.04); border: 1px solid rgba(200,255,87,0.15);
-    border-radius: 6px; padding: 12px 16px; font-size: 11px; color: var(--acc); line-height: 2;
+    border-radius: 6px; padding: 12px 18px; font-size: 11px; color: var(--acc); line-height: 2;
   }
   .formula b { color: #fff; }
 
-  /* TABLA RESULTADOS */
+  /* TABLA */
   .tbl-wrap { background: var(--s1); border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .tbl-bar {
-    padding: 12px 18px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: center; justify-content: space-between;
-  }
-  .tbl-bar-title { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
+  .tbl-bar { padding: 12px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+  .tbl-title { font-family: 'Syne', sans-serif; font-size: 10px; font-weight: 600; letter-spacing: 2px; color: var(--muted); text-transform: uppercase; }
 
   table { width: 100%; border-collapse: collapse; }
-  thead th {
-    background: var(--s3); padding: 9px 14px; text-align: right;
-    font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-  }
+  thead th { background: var(--s3); padding: 9px 16px; text-align: right; font-size: 9px; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; border-bottom: 1px solid var(--border); }
   thead th:first-child { text-align: left; }
-  tbody td { padding: 11px 14px; text-align: right; border-bottom: 1px solid rgba(37,37,51,0.5); font-size: 12px; }
+  tbody td { padding: 12px 16px; text-align: right; border-bottom: 1px solid rgba(37,37,51,0.5); font-size: 12px; }
   tbody td:first-child { text-align: left; font-weight: 700; }
   tbody tr:last-child td { border-bottom: none; }
   tbody tr:hover { background: rgba(255,255,255,0.02); }
@@ -151,131 +102,60 @@
   .chx { background: rgba(255,87,87,0.12); color: var(--acc2); }
 
   /* CHARTS */
-  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
   .ch-card { background: var(--s1); border: 1px solid var(--border); border-radius: 8px; padding: 16px; }
-  .ch-card canvas { background: var(--s1) !important; border-radius: 4px; }
+  .ch-card canvas { background: var(--s1) !important; }
   .ch-title { font-family: 'Syne', sans-serif; font-size: 9px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; margin-bottom: 12px; }
 
   .warn { background: rgba(255,170,87,0.06); border: 1px solid rgba(255,170,87,0.2); border-radius: 6px; padding: 10px 14px; font-size: 10px; color: var(--acc4); line-height: 1.8; }
-
   .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--acc); display: inline-block; animation: dp 2s infinite; vertical-align: middle; margin-right: 5px; }
   @keyframes dp { 0%,100%{opacity:1} 50%{opacity:0.2} }
 
-  @media (max-width: 900px) {
-    .page { grid-template-columns: 1fr; }
-    .panel { border-right: none; border-bottom: 1px solid var(--border); }
-    .charts-row { grid-template-columns: 1fr; }
-  }
+  @media (max-width: 800px) { .charts-row { grid-template-columns: 1fr; } .topbar { flex-wrap: wrap; height: auto; padding: 12px; } }
 </style>
 </head>
 <body>
 
 <div class="topbar">
   <div class="logo">COVERED<em>CALL</em>.io</div>
+  <div class="divider"></div>
+  <div class="field-wrap">
+    <span class="lbl">Ticker</span>
+    <input class="inp ticker" id="ticker" value="META" maxlength="6" oninput="this.value=this.value.toUpperCase()">
+  </div>
+  <div class="field-wrap">
+    <span class="lbl">Vencimiento</span>
+    <input class="inp expiry" id="expiryIn" type="date" value="2026-04-17">
+  </div>
+  <button class="btn" id="btnBuscar" onclick="buscar()">⚡ BUSCAR</button>
+  <span class="pill pill-idle" id="pill">En espera</span>
 </div>
 
-<div class="page">
-
-  <!-- PANEL IZQUIERDO -->
-  <div class="panel">
-
-    <div>
-      <div class="sec-title">📋 Datos de la posición</div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        <div class="field">
-          <label>Ticker</label>
-          <input class="ticker-inp" id="ticker" value="META" maxlength="6" oninput="this.value=this.value.toUpperCase()" placeholder="META">
-        </div>
-        <div class="fields-row">
-          <div class="field">
-            <label>Precio acción (USD)</label>
-            <input type="number" id="stockPrice" value="557" step="0.01" placeholder="557.00">
-          </div>
-          <div class="field">
-            <label>Vencimiento</label>
-            <input type="date" id="expiry" value="2026-04-24">
-          </div>
-        </div>
-      </div>
+<div class="content">
+  <div id="splash" class="splash">
+    <div class="splash-icon">📊</div>
+    <div class="splash-title">Analizador de Covered Calls</div>
+    <div class="splash-sub">
+      Ingresá el ticker y la fecha de vencimiento.<br>
+      Buscamos el precio y las 10 bases OTM automáticamente.<br>
+      Calculamos la TNA de cada una al instante.
     </div>
-
-    <div>
-      <div class="sec-title">⚡ Strikes y primas (hasta 10)</div>
-      <table class="strikes-table">
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>Strike (USD)</th>
-            <th>Prima (USD)</th>
-          </tr>
-        </thead>
-        <tbody id="inputRows"></tbody>
-      </table>
-    </div>
-
-    <button class="btn-calc" onclick="calcular()">▶ CALCULAR TNA</button>
-    <button class="btn-clear" onclick="limpiar()">✕ Limpiar</button>
-
-    <div class="warn">
-      💡 TNA = ((Strike + Prima) ÷ Precio Acción − 1) ÷ Días × 365<br>
-      Ingresá los precios desde tu broker (IBKR, TOS, etc).
-    </div>
-
   </div>
-
-  <!-- CONTENIDO DERECHO -->
-  <div class="content">
-    <div id="splash" class="splash">
-      <div class="splash-icon">📊</div>
-      <div class="splash-title">Analizador de Covered Calls</div>
-      <div class="splash-sub">
-        Completá el ticker, precio de la acción,<br>
-        fecha de vencimiento y los strikes con sus primas.<br>
-        Calculamos la TNA de cada uno al instante.
-      </div>
-    </div>
-    <div id="results" style="display:none;flex-direction:column;gap:16px"></div>
-  </div>
-
+  <div id="results" style="display:none;flex-direction:column;gap:18px"></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
 
-// Crear las 10 filas de input
-function crearFilas() {
-  const tbody = document.getElementById('inputRows');
-  tbody.innerHTML = '';
-  for (let i = 1; i <= 10; i++) {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${i}</td>
-      <td><input class="strike-inp" id="s${i}" type="number" step="0.5" placeholder="600"></td>
-      <td><input class="prima-inp"  id="p${i}" type="number" step="0.01" placeholder="8.50"></td>
-    `;
-    tbody.appendChild(tr);
-  }
-}
-crearFilas();
-
-function limpiar() {
-  for (let i = 1; i <= 10; i++) {
-    document.getElementById('s'+i).value = '';
-    document.getElementById('p'+i).value = '';
-  }
-  document.getElementById('results').style.display = 'none';
-  document.getElementById('splash').style.display   = 'flex';
-}
-
 function diasHasta(dateStr) {
   const hoy = new Date(); hoy.setHours(0,0,0,0);
   return Math.max(1, Math.ceil((new Date(dateStr + 'T00:00:00') - hoy) / 86400000));
 }
-
 function fmt(n, d=2) { return parseFloat(n).toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d}); }
+function setStatus(txt, type) { const el = document.getElementById('pill'); el.textContent = txt; el.className = 'pill pill-' + type; }
 
 function badge(tna) {
-  const p = (tna * 100).toFixed(1) + '%';
+  const p = (tna*100).toFixed(1)+'%';
   if (tna >= 0.30) return `<span class="chip chi">${p}</span>`;
   if (tna >= 0.15) return `<span class="chip chm">${p}</span>`;
   if (tna >= 0.08) return `<span class="chip chl">${p}</span>`;
@@ -283,46 +163,59 @@ function badge(tna) {
 }
 
 let charts = {};
-
-// Set Chart.js defaults for dark theme
-Chart.defaults.backgroundColor = 'transparent';
-Chart.defaults.color = '#5a5a7a';
 function dc(id) { if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
 
-function calcular() {
-  const ticker     = document.getElementById('ticker').value.toUpperCase().trim() || 'N/A';
-  const stockPrice = parseFloat(document.getElementById('stockPrice').value);
-  const expiry     = document.getElementById('expiry').value;
+async function buscar() {
+  const ticker = document.getElementById('ticker').value.toUpperCase().trim();
+  const expiry = document.getElementById('expiryIn').value;
+  if (!ticker || !expiry) { alert('Completá ticker y fecha'); return; }
 
-  if (!stockPrice || stockPrice <= 0) { alert('Ingresá el precio de la acción'); return; }
-  if (!expiry) { alert('Ingresá la fecha de vencimiento'); return; }
+  const btn = document.getElementById('btnBuscar');
+  btn.disabled = true;
+  setStatus('Buscando...', 'loading');
+  document.getElementById('splash').style.display = 'flex';
+  document.getElementById('splash').innerHTML = `
+    <div class="splash-icon">⏳</div>
+    <div class="splash-title">Buscando ${ticker}...</div>
+    <div class="loading-bar"></div>
+    <div class="splash-sub">Obteniendo precio y las 10 bases OTM para el vencimiento.</div>
+  `;
+  document.getElementById('results').style.display = 'none';
 
-  const DIAS = diasHasta(expiry);
-  const expDate = new Date(expiry + 'T00:00:00');
-  const expLabel = expDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+  try {
+    const res  = await fetch(`/.netlify/functions/get-options?ticker=${ticker}&expiry=${expiry}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
 
-  // Leer filas
-  const rows = [];
-  for (let i = 1; i <= 10; i++) {
-    const strike = parseFloat(document.getElementById('s'+i).value);
-    const prima  = parseFloat(document.getElementById('p'+i).value);
-    if (!isNaN(strike) && !isNaN(prima) && strike > 0 && prima > 0) {
-      // TNA = ((strike + prima) / stockPrice - 1) / dias * 365
-      const rendimiento = (strike + prima) / stockPrice - 1;
-      const tna = rendimiento / DIAS * 365;
-      const otmPct = ((strike / stockPrice) - 1) * 100;
-      const beLanzador = stockPrice - prima;
-      const maxGain = (strike - stockPrice + prima) * 100;
-      rows.push({ strike, prima, rendimiento, tna, otmPct, beLanzador, maxGain });
-    }
+    setStatus(`${ticker} · $${fmt(data.stockPrice)}`, 'ok');
+    btn.disabled = false;
+    render(data);
+  } catch(err) {
+    setStatus('Error', 'err');
+    btn.disabled = false;
+    document.getElementById('splash').innerHTML = `
+      <div class="splash-icon">⚠️</div>
+      <div class="splash-title">Error</div>
+      <div class="splash-sub">${err.message}</div>
+    `;
   }
+}
 
-  if (rows.length === 0) { alert('Ingresá al menos un strike y una prima'); return; }
+function render(d) {
+  const { ticker, stockPrice, stockChange, high52, low52, expiryLabel, dias, calls } = d;
 
-  rows.sort((a, b) => a.strike - b.strike);
+  // Calcular TNA para cada call: ((strike + prima) / stockPrice - 1) / dias * 365
+  const rows = calls.map(c => {
+    const rendimiento = (c.strike + c.prima) / stockPrice - 1;
+    const tna = rendimiento / dias * 365;
+    const otmPct = (c.strike / stockPrice - 1) * 100;
+    const beLanzador = stockPrice - c.prima;
+    const maxGain = (c.strike - stockPrice + c.prima) * 100;
+    return { ...c, rendimiento, tna, otmPct, beLanzador, maxGain };
+  }).filter(r => r.tna > 0);
+
   const bestIdx = rows.reduce((bi, r, i) => r.tna > rows[bi].tna ? i : bi, 0);
 
-  // Mostrar resultados
   document.getElementById('splash').style.display = 'none';
   const res = document.getElementById('results');
   res.style.display = 'flex';
@@ -333,39 +226,35 @@ function calcular() {
       <div class="res-ticker">${ticker}</div>
       <div>
         <div class="res-price">$${fmt(stockPrice)}</div>
-        <div style="font-size:10px;color:var(--muted);margin-top:3px">Precio ingresado</div>
+        <div class="res-chg ${stockChange >= 0 ? 'pos' : 'neg'}">${stockChange >= 0 ? '▲' : '▼'} ${Math.abs(stockChange||0).toFixed(2)}% hoy</div>
       </div>
       <div class="res-meta">
-        <div class="rm"><div class="rm-l">Vencimiento</div><div class="rm-v" style="color:var(--acc)">${expLabel}</div></div>
-        <div class="rm"><div class="rm-l">Días al vto.</div><div class="rm-v" style="color:var(--acc3)">${DIAS}d</div></div>
-        <div class="rm"><div class="rm-l">Bases cargadas</div><div class="rm-v">${rows.length}</div></div>
+        <div class="rm"><div class="rm-l">52W High</div><div class="rm-v">$${fmt(high52||0,0)}</div></div>
+        <div class="rm"><div class="rm-l">52W Low</div><div class="rm-v">$${fmt(low52||0,0)}</div></div>
+        <div class="rm"><div class="rm-l">Vencimiento</div><div class="rm-v" style="color:var(--acc)">${expiryLabel}</div></div>
+        <div class="rm"><div class="rm-l">Días al vto.</div><div class="rm-v" style="color:var(--acc3)">${dias}d</div></div>
         <div class="rm"><div class="rm-l">Mejor TNA</div><div class="rm-v" style="color:var(--acc)">${(ejR.tna*100).toFixed(1)}%</div></div>
       </div>
     </div>
 
     <div class="formula">
       📐 <b>TNA = ((Strike + Prima) ÷ Precio Acción − 1) ÷ Días × 365</b><br>
-      Mejor base: Strike <b>$${fmt(ejR.strike)}</b> · Prima <b>$${fmt(ejR.prima)}</b> → Rend. <b>${(ejR.rendimiento*100).toFixed(2)}%</b> → TNA <b style="color:#fff;font-size:13px">${(ejR.tna*100).toFixed(2)}%</b>
+      Mejor base → Strike <b>$${fmt(ejR.strike,0)}</b> · Prima <b>$${fmt(ejR.prima)}</b> · Rend. <b>${(ejR.rendimiento*100).toFixed(2)}%</b> → TNA <b style="color:#fff;font-size:13px">${(ejR.tna*100).toFixed(2)}%</b>
     </div>
 
     <div class="tbl-wrap">
       <div class="tbl-bar">
-        <span class="tbl-bar-title"><span class="dot"></span>Resultados por strike · ${expLabel}</span>
-        <span style="font-size:10px;color:var(--muted)">🟢 ≥30% &nbsp; 🔵 ≥15% &nbsp; 🟠 ≥8%</span>
+        <span class="tbl-title"><span class="dot"></span>10 Bases OTM · CALL ${ticker} · ${expiryLabel}</span>
+        <span style="font-size:10px;color:var(--muted)">🟢 ≥30% &nbsp;🔵 ≥15% &nbsp;🟠 ≥8%</span>
       </div>
       <table>
         <thead>
           <tr>
-            <th>Strike</th>
-            <th>% OTM/ITM</th>
-            <th>Prima</th>
-            <th>Rendimiento</th>
-            <th>TNA</th>
-            <th>BE lanzador</th>
-            <th>Máx ganancia (1 lote)</th>
+            <th>Strike</th><th>% OTM</th><th>Prima</th><th>Bid</th><th>Ask</th>
+            <th>Rendimiento</th><th>TNA</th><th>BE lanzador</th><th>Volumen</th><th>OI</th>
           </tr>
         </thead>
-        <tbody id="resTbody"></tbody>
+        <tbody id="tbody"></tbody>
       </table>
     </div>
 
@@ -375,32 +264,30 @@ function calcular() {
         <canvas id="chTNA" height="200"></canvas>
       </div>
       <div class="ch-card">
-        <div class="ch-title">P&amp;L al vencimiento · Strike $${fmt(rows[0].strike, 0)} (más cercano)</div>
+        <div class="ch-title">P&amp;L al vencimiento · Strike $${fmt(rows[0].strike,0)}</div>
         <canvas id="chPL" height="200"></canvas>
       </div>
     </div>
 
-    <div class="warn">
-      ⚠️ <b>BE lanzador</b> = Precio acción − Prima = precio al que empezás a perder. <b>Máx ganancia</b> calculada sobre 1 lote (100 acciones).
-    </div>
+    <div class="warn">⚠️ Datos con hasta 15 min de delay (MarketData.app). Verificá siempre en tu broker antes de operar.</div>
   `;
 
   // Tabla
-  const tbody = document.getElementById('resTbody');
+  const tbody = document.getElementById('tbody');
   rows.forEach((r, i) => {
     const tr = document.createElement('tr');
     if (i === bestIdx) tr.className = 'best';
-    const moneyness = r.otmPct >= 0
-      ? `<span style="color:var(--acc4)">+${r.otmPct.toFixed(1)}% OTM</span>`
-      : `<span style="color:var(--acc2)">${r.otmPct.toFixed(1)}% ITM</span>`;
     tr.innerHTML = `
-      <td>$${fmt(r.strike, r.strike % 1 === 0 ? 0 : 2)} ${i === bestIdx ? '⭐' : ''}</td>
-      <td>${moneyness}</td>
+      <td>$${fmt(r.strike,0)} ${i===bestIdx?'⭐':''}</td>
+      <td style="color:var(--acc4)">+${r.otmPct.toFixed(1)}%</td>
       <td style="color:var(--acc)"><b>$${fmt(r.prima)}</b></td>
+      <td style="color:var(--muted)">${r.bid?'$'+fmt(r.bid):'—'}</td>
+      <td style="color:var(--muted)">${r.ask?'$'+fmt(r.ask):'—'}</td>
       <td>${(r.rendimiento*100).toFixed(2)}%</td>
       <td>${badge(r.tna)}</td>
       <td style="color:var(--acc3)">$${fmt(r.beLanzador)}</td>
-      <td style="color:${r.maxGain>0?'var(--acc)':'var(--acc2)'}">$${fmt(r.maxGain, 0)}</td>
+      <td style="color:var(--muted)">${r.volumen?parseInt(r.volumen).toLocaleString():'—'}</td>
+      <td style="color:var(--muted)">${r.oi?parseInt(r.oi).toLocaleString():'—'}</td>
     `;
     tbody.appendChild(tr);
   });
@@ -421,41 +308,37 @@ function calcular() {
     },
     options: {
       responsive: true,
-      plugins: {
-        legend: { display: false },
-        tooltip: { callbacks: { label: ctx => ctx.raw + '% TNA' } },
-        customCanvasBackgroundColor: { color: 'transparent' }
-      },
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.raw+'% TNA' } } },
       scales: {
-        x: { grid: { color: 'rgba(37,37,51,0.8)' }, ticks: { color: '#5a5a7a', font: { family: 'Space Mono', size: 10 } } },
-        y: { grid: { color: 'rgba(37,37,51,0.8)' }, ticks: { color: '#5a5a7a', font: { family: 'Space Mono', size: 10 }, callback: v => v + '%' } }
+        x: { grid: { color: 'rgba(37,37,51,0.8)' }, ticks: { color: '#5a5a7a', font: { family:'Space Mono', size:10 } } },
+        y: { grid: { color: 'rgba(37,37,51,0.8)' }, ticks: { color: '#5a5a7a', font: { family:'Space Mono', size:10 }, callback: v => v+'%' } }
       }
     }
   });
 
-  // Chart P&L — primer strike (más cercano al precio)
+  // Chart P&L
   dc('c2');
-  const S = stockPrice, K = rows[0].strike, P = rows[0].prima;
-  const plL = [], plV = [];
-  for (let price = S*0.78; price <= S*1.22; price += S*0.44/50) {
-    plL.push('$' + fmt(price, 0));
-    plV.push(parseFloat((Math.min(K-S+P, price-S+P)*100).toFixed(0)));
+  const S=stockPrice, K=rows[0].strike, P=rows[0].prima;
+  const plL=[], plV=[];
+  for (let p=S*0.78; p<=S*1.22; p+=S*0.44/50) {
+    plL.push('$'+fmt(p,0));
+    plV.push(parseFloat((Math.min(K-S+P, p-S+P)*100).toFixed(0)));
   }
   charts['c2'] = new Chart(document.getElementById('chPL'), {
     type: 'line',
     data: {
       labels: plL,
       datasets: [
-        { data: plV, borderColor: '#c8ff57', segment: { borderColor: ctx => ctx.p0.parsed.y < 0 ? '#ff5757' : '#c8ff57' }, backgroundColor: 'rgba(200,255,87,0.04)', borderWidth: 2.5, pointRadius: 0, fill: true, tension: 0.1 },
-        { data: Array(plL.length).fill(0), borderColor: 'rgba(255,255,255,0.08)', borderWidth: 1, pointRadius: 0, fill: false }
+        { data: plV, borderColor:'#c8ff57', segment:{borderColor: ctx=>ctx.p0.parsed.y<0?'#ff5757':'#c8ff57'}, backgroundColor:'rgba(200,255,87,0.04)', borderWidth:2.5, pointRadius:0, fill:true, tension:0.1 },
+        { data: Array(plL.length).fill(0), borderColor:'rgba(255,255,255,0.08)', borderWidth:1, pointRadius:0, fill:false }
       ]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => '$' + parseFloat(ctx.raw).toLocaleString() + ' P&L' } } },
+      plugins: { legend:{display:false}, tooltip:{callbacks:{label: ctx=>'$'+parseFloat(ctx.raw).toLocaleString()+' P&L'}} },
       scales: {
-        x: { grid: { color: 'rgba(37,37,51,0.8)' }, ticks: { color: '#5a5a7a', font: { family: 'Space Mono', size: 9 }, maxTicksLimit: 8 } },
-        y: { grid: { color: 'rgba(37,37,51,0.8)' }, ticks: { color: '#5a5a7a', font: { family: 'Space Mono', size: 10 }, callback: v => '$' + v } }
+        x: { grid:{color:'rgba(37,37,51,0.8)'}, ticks:{color:'#5a5a7a', font:{family:'Space Mono',size:9}, maxTicksLimit:8} },
+        y: { grid:{color:'rgba(37,37,51,0.8)'}, ticks:{color:'#5a5a7a', font:{family:'Space Mono',size:10}, callback:v=>'$'+v} }
       }
     }
   });
