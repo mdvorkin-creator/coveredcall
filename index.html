@@ -316,6 +316,10 @@ function render(d){
   ].join('');
   strip.innerHTML=items+items;
 
+  // Expose to global scope so selector can access them
+  window._rows = rows;
+  window._stockPrice = stockPrice;
+
   document.getElementById('splash').style.display='none';
   const res=document.getElementById('results');
   res.style.display='flex';
@@ -408,7 +412,7 @@ function render(d){
             <span class="bb-panel-title">P&amp;L AT EXPIRY</span>
             <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
               <span class="bb-panel-sub">STRIKE:</span>
-              <select id="plStrikeSelect" onchange="updatePL(rows,stockPrice)" style="background:#000;border:1px solid var(--border2);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;padding:2px 5px;outline:none;cursor:pointer">
+              <select id="plStrikeSelect" onchange="updatePL(window._rows, window._stockPrice)" style="background:#000;border:1px solid var(--border2);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;padding:2px 5px;outline:none;cursor:pointer">
                 ${rows.map((r,i)=>`<option value="${i}">$${fmt(r.strike,0)} · TNA ${(r.tna*100).toFixed(1)}%</option>`).join('')}
               </select>
               <span class="bb-panel-sub">1 LOTE · 100 ACC</span>
