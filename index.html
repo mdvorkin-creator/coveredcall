@@ -240,38 +240,11 @@ async function fetchData() {
   const expTimestamp = Math.floor(expDate.getTime() / 1000);
 
   try {
-    // ── 1. Precio de la acción via Yahoo Finance (sin CORS gracias a proxy)
-    const quoteRes = await fetch(`/.netlify/functions/yahoo-quote?ticker=${ticker}`);
-    if (!quoteRes.ok) throw new Error('No se pudo obtener el precio de ' + ticker);
-    const quoteData = await quoteRes.json();
-    if (quoteData.error) throw new Error(quoteData.error);
-
-    // ── 2. Cadena de opciones via Yahoo Finance
-    const optRes = await fetch(`/.netlify/functions/yahoo-options?ticker=${ticker}&date=${expTimestamp}`);
-    if (!optRes.ok) throw new Error('No se pudo obtener opciones de ' + ticker);
-    const optData = await optRes.json();
-    if (optData.error) throw new Error(optData.error);
-
-    const stockPrice = quoteData.price;
-
-    // Filtrar calls OTM, ordenar, tomar primeras 10
-    const calls = (optData.calls || [])
-      .filter(c => c.strike > stockPrice && c.prima > 0)
-      .sort((a, b) => a.strike - b.strike)
-      .slice(0, 10);
-
-    if (calls.length === 0) throw new Error('No hay calls OTM con precio para ese vencimiento. Probá otra fecha.');
-
-    const parsed = {
-      ticker,
-      stockPrice,
-      stockChange: quoteData.change || 0,
-      high52: quoteData.high52 || 0,
-      low52: quoteData.low52 || 0,
-      expiryLabel,
-      dias: DIAS,
-      calls
-    };
+    // ── Llamada única a Tradier API via proxy
+    const apiRes = await fetch(`/.netlify/functions/get-options?ticker=${ticker}&expiry=${expiry}`);
+    const parsed = await apiRes.json();
+    if (parsed.error) throw new Error(parsed.error);
+    if (!parsed.calls || parsed.calls.length === 0) throw new Error('No hay calls OTM con precio para ese vencimiento.');
 
     setStatus(`${ticker} · $${fmt(parsed.stockPrice)}`, 'ok');
     btn.disabled = false;
