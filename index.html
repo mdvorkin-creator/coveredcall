@@ -301,49 +301,7 @@ function render(d){
   const chgPos=(stockChange||0)>=0;
   const mobile=isMobile();
 
-  // Fill analysis panel
-  function aCard(id,label,val,sub,color){
-    document.getElementById(id).innerHTML=`
-      <div class="a-card-l">${label}</div>
-      <div class="a-card-v" style="color:${color||'var(--white)'}">${val}</div>
-      <div class="a-card-sub">${sub}</div>`;
-  }
-  const br=rows[bestRatioIdx], bp=rows[bestProtIdx]||rows[0];
-  const launchRows=rows.filter(r=>r.tna>=0.15&&r.protPct>=1&&r.otmPct<=10&&(!r.oi||r.oi>=100));
-  document.getElementById('analysisSub').textContent=
-    launchRows.length>0?`${launchRows.length} BASE${launchRows.length>1?'S':''} RECOMENDADA${launchRows.length>1?'S':''}`:'SIN BASES ÓPTIMAS';
 
-  aCard('aCard1','MEJOR TNA',
-    `$${fmt(ejR.strike,0)} · ${(ejR.tna*100).toFixed(1)}%`,
-    `Prima $${fmt(ejR.prima)} · Prot. ${ejR.protPct.toFixed(2)}%`,
-    'var(--green)');
-
-  aCard('aCard2','MEJOR RATIO TNA/OTM',
-    `$${fmt(br.strike,0)} · ${br.ratioTnaOtm.toFixed(2)}x`,
-    `${(br.tna*100).toFixed(1)}% TNA por ${br.otmPct.toFixed(1)}% OTM`,
-    'var(--blue)');
-
-  aCard('aCard3','MAYOR PROTECCIÓN (TNA≥8%)',
-    `$${fmt(bp.strike,0)} · ${bp.protPct.toFixed(2)}%`,
-    `Baja hasta $${fmt(bp.beLanzador)} · TNA ${(bp.tna*100).toFixed(1)}%`,
-    'var(--yellow)');
-
-  aCard('aCard4','BREAK-EVEN LANZADOR',
-    `$${fmt(ejR.beLanzador)}`,
-    `Caída máx. cubierta: $${fmt(ejR.protDolar)} (${ejR.protPct.toFixed(2)}%)`,
-    'var(--orange)');
-
-  aCard('aCard5','MÁX. GANANCIA (1 LOTE)',
-    `$${fmt(ejR.maxGain,0)}`,
-    `Strike $${fmt(ejR.strike,0)} · si se ejerce al vto.`,
-    'var(--green)');
-
-  const riesgoAnio=((stockPrice-ejR.beLanzador)/stockPrice*100);
-  const alertColor=riesgoAnio<3?'var(--green)':riesgoAnio<7?'var(--yellow)':'var(--red)';
-  aCard('aCard6','RIESGO SI BAJA MÁS DEL B/E',
-    `-${riesgoAnio.toFixed(1)}%`,
-    `Pérdida no cubierta por la prima`,
-    alertColor);
 
   // Ticker strip
   const strip=document.getElementById('tickerStrip');
@@ -361,6 +319,28 @@ function render(d){
   document.getElementById('splash').style.display='none';
   const res=document.getElementById('results');
   res.style.display='flex';
+
+  // Helper to fill analysis cards — must run AFTER res.innerHTML is set
+  function fillAnalysis(){
+    function aCard(id,label,val,sub,color){
+      const el=document.getElementById(id);
+      if(!el)return;
+      el.innerHTML=`<div class="a-card-l">${label}</div><div class="a-card-v" style="color:${color||'var(--white)'}">${val}</div><div class="a-card-sub">${sub}</div>`;
+    }
+    const br=rows[bestRatioIdx], bp=rows[bestProtIdx]||rows[0];
+    const launchRows=rows.filter(r=>r.tna>=0.15&&r.protPct>=1&&r.otmPct<=10&&(!r.oi||r.oi>=100));
+    const sub=document.getElementById('analysisSub');
+    if(sub) sub.textContent=launchRows.length>0?(launchRows.length+' BASE'+(launchRows.length>1?'S':'')+' RECOMENDADA'+(launchRows.length>1?'S':'')):'SIN BASES ÓPTIMAS';
+
+    aCard('aCard1','MEJOR TNA',`$${fmt(ejR.strike,0)} · ${(ejR.tna*100).toFixed(1)}%`,`Prima $${fmt(ejR.prima)} · Prot. ${ejR.protPct.toFixed(2)}%`,'var(--green)');
+    aCard('aCard2','MEJOR RATIO TNA/OTM',`$${fmt(br.strike,0)} · ${br.ratioTnaOtm.toFixed(2)}x`,`${(br.tna*100).toFixed(1)}% TNA por ${br.otmPct.toFixed(1)}% OTM`,'var(--blue)');
+    aCard('aCard3','MAYOR PROTECCIÓN (TNA≥8%)',`$${fmt(bp.strike,0)} · ${bp.protPct.toFixed(2)}%`,`Baja hasta $${fmt(bp.beLanzador)} · TNA ${(bp.tna*100).toFixed(1)}%`,'var(--yellow)');
+    aCard('aCard4','BREAK-EVEN LANZADOR',`$${fmt(ejR.beLanzador)}`,`Caída cubierta: $${fmt(ejR.protDolar)} (${ejR.protPct.toFixed(2)}%)`,'var(--orange)');
+    aCard('aCard5','MÁX. GANANCIA (1 LOTE)',`$${fmt(ejR.maxGain,0)}`,`Strike $${fmt(ejR.strike,0)} · si se ejerce al vto.`,'var(--green)');
+    const riesgo=((stockPrice-ejR.beLanzador)/stockPrice*100);
+    const alertColor=riesgo<3?'var(--green)':riesgo<7?'var(--yellow)':'var(--red)';
+    aCard('aCard6','RIESGO BAJO EL B/E',`-${riesgo.toFixed(1)}%`,`Pérdida no cubierta por prima`,alertColor);
+  }
 
   res.innerHTML=`
     <div class="quote-bar">
@@ -432,6 +412,9 @@ function render(d){
         </div>
       </div>
     </div>`;
+
+  // Populate analysis panel now that DOM is ready
+  fillAnalysis();
 
   // Tabla
   const tbody=document.getElementById('tbody');
