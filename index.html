@@ -238,23 +238,7 @@ async function fetchData() {
   const expDate = new Date(expiry + 'T00:00:00');
   const expLabel = expDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
 
-  // Timestamp Unix para la URL de Yahoo Finance
-  const expTimestamp = Math.floor(new Date(expiry + 'T00:00:00').getTime() / 1000);
-
-  const prompt = `Hacé búsquedas web para obtener datos reales de opciones de ${ticker} y devolveme un JSON.
-
-PASO 1 - Precio acción: buscá "${ticker} stock price yahoo finance"
-PASO 2 - Opciones: buscá "${ticker} options chain calls ${expLabel}" y también intentá fetchear https://finance.yahoo.com/quote/${ticker}/options/?date=${expTimestamp}
-
-Con los datos encontrados completá este JSON con valores numéricos reales:
-
-{"ticker":"${ticker}","stockPrice":0,"stockChange":0,"high52":0,"low52":0,"expiryLabel":"${expLabel}","dias":${DIAS},"calls":[{"strike":0,"prima":0,"bid":0,"ask":0,"volumen":0,"oi":0}]}
-
-Reglas:
-- calls: solo CALL con strike > stockPrice (OTM), ordenadas de menor a mayor strike, máximo 10
-- Si last price es 0, usá (bid+ask)/2 como prima
-- Si no hay datos para ${expLabel}, usá el vencimiento más cercano disponible y actualizá expiryLabel
-- Devolvé SOLO el JSON, sin texto adicional, sin markdown, sin backticks\`;
+  const prompt = `${ticker} options calls ${expLabel} OTM prices. Return ONLY JSON: {"ticker":"${ticker}","stockPrice":0,"stockChange":0,"high52":0,"low52":0,"expiryLabel":"${expLabel}","dias":${DIAS},"calls":[{"strike":0,"prima":0,"bid":0,"ask":0,"volumen":0,"oi":0}]}. Rules: calls=10 OTM CALLs strike>stockPrice sorted asc, prima=last price or mid(bid,ask), JSON only no markdown.`;
 
   try {
     const res = await fetch('/.netlify/functions/claude-proxy', {
