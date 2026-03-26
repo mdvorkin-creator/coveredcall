@@ -1,121 +1,73 @@
 exports.handler = async function(event) {
-  const ticker  = event.queryStringParameters?.ticker;
-  const expiry  = event.queryStringParameters?.expiry;
-  const hdrs    = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
+  const ticker = event.queryStringParameters?.ticker;
+  const expiry = event.queryStringParameters?.expiry; // YYYY-MM-DD
+  const hdrs   = { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' };
   if (!ticker) return { statusCode: 400, headers: hdrs, body: JSON.stringify({ error: 'ticker requerido' }) };
 
-  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
+  const TOKEN = process.env.MARKETDATA_TOKEN;
+  if (!TOKEN) return { statusCode: 500, headers: hdrs, body: JSON.stringify({ error: 'MARKETDATA_TOKEN no configurado en Netlify' }) };
 
   try {
-    // PASO 1: obtener cookie + crumb desde Yahoo
-    let cookie = '';
-    let crumb  = '';
-
-    // Primer request a Yahoo para obtener cookie de sesión
-    const initRes = await fetch('https://finance.yahoo.com/quote/' + ticker, {
-      headers: {
-        'User-Agent': UA,
-        'Accept': 'text/html,application/xhtml+xml',
-        'Accept-Language': 'en-US,en;q=0.9'
-      },
-      redirect: 'follow'
+    // 1. Precio actual
+    const qRes = await fetch(`https://api.marketdata.app/v1/stocks/quotes/${ticker}/`, {
+      headers: { 'Authorization': `Bearer ${TOKEN}` }
     });
-
-    // Extraer cookie del header set-cookie
-    const setCookie = initRes.headers.get('set-cookie') || '';
-    // Buscar cookie A1 o similar que Yahoo usa para autenticación
-    const cookieParts = setCookie.split(',').map(c => c.trim().split(';')[0]);
-    cookie = cookieParts.filter(c => c.includes('=')).join('; ');
-
-    // PASO 2: obtener crumb usando la cookie
-    const crumbRes = await fetch('https://query1.finance.yahoo.com/v1/test/csrfToken', {
-      headers: {
-        'User-Agent': UA,
-        'Accept': 'application/json',
-        'Cookie': cookie
-      }
-    });
-    if (crumbRes.ok) {
-      crumb = (await crumbRes.text()).trim();
-      // El crumb a veces viene en JSON
-      try { const j = JSON.parse(crumb); crumb = j.crumb || crumb; } catch(e) {}
-    }
-
-    const reqHeaders = {
-      'User-Agent': UA,
-      'Accept': 'application/json',
-      'Accept-Language': 'en-US,en;q=0.9',
-      'Referer': 'https://finance.yahoo.com/',
-      ...(cookie ? { 'Cookie': cookie } : {})
-    };
-
-    // PASO 3: precio actual
-    const crumbParam = crumb ? `&crumb=${encodeURIComponent(crumb)}` : '';
-    const qRes  = await fetch(
-      `https://query1.finance.yahoo.com/v8/finance/chart/${ticker}?interval=1d&range=1d${crumbParam}`,
-      { headers: reqHeaders }
-    );
     if (!qRes.ok) throw new Error(`No se pudo obtener precio de ${ticker} (${qRes.status})`);
     const qData = await qRes.json();
-    const meta  = qData?.chart?.result?.[0]?.meta;
-    if (!meta?.regularMarketPrice) throw new Error(`Ticker ${ticker} no encontrado`);
+    if (!qData.last?.[0]) throw new Error(`Ticker ${ticker} no encontrado`);
 
-    const stockPrice  = meta.regularMarketPrice;
-    const prevClose   = meta.chartPreviousClose || meta.previousClose || stockPrice;
-    const stockChange = ((stockPrice - prevClose) / prevClose * 100);
-    const high52      = meta.fiftyTwoWeekHigh || 0;
-    const low52       = meta.fiftyTwoWeekLow  || 0;
+    const stockPrice  = qData.last[0];
+    const stockChange = qData.changepct?.[0] || 0;
+    const high52      = qData['52weekHigh']?.[0] || 0;
+    const low52       = qData['52weekLow']?.[0]  || 0;
 
-    // PASO 4: opciones
-    const expTimestamp = expiry ? Math.floor(new Date(expiry + 'T12:00:00').getTime() / 1000) : '';
-    const optUrl = `https://query1.finance.yahoo.com/v7/finance/options/${ticker}${expTimestamp ? '?date=' + expTimestamp + crumbParam.replace('&','&') : (crumb ? '?' + crumbParam.slice(1) : '')}`;
+    // 2. Cadena de opciones
+    const expiryParam = expiry ? `&expiration=${expiry}` : '';
+    const optRes = await fetch(
+      `https://api.marketdata.app/v1/options/chain/${ticker}/?side=call&strikeLimit=15${expiryParam}`,
+      { headers: { 'Authorization': `Bearer ${TOKEN}` } }
+    );
+    if (!optRes.ok) throw new Error(`No se pudo obtener opciones (${optRes.status})`);
+    const optData = await optRes.json();
 
-    const oRes  = await fetch(optUrl, { headers: reqHeaders });
-    if (!oRes.ok) throw new Error(`Opciones no disponibles (${oRes.status}). Intentá de nuevo.`);
-    const oData = await oRes.json();
+    if (!optData.strike || optData.strike.length === 0)
+      throw new Error('Sin opciones disponibles para ese vencimiento');
 
-    const result   = oData?.optionChain?.result?.[0];
-    if (!result)   throw new Error('Sin datos de opciones para ' + ticker);
+    // Armar array de calls
+    const allCalls = optData.strike.map((s, i) => ({
+      strike:  s,
+      prima:   parseFloat(((optData.last?.[i] || 0) > 0 ? optData.last[i] : ((optData.bid?.[i]||0) + (optData.ask?.[i]||0)) / 2).toFixed(2)),
+      bid:     optData.bid?.[i]   || null,
+      ask:     optData.ask?.[i]   || null,
+      volumen: optData.volume?.[i] || null,
+      oi:      optData.openInterest?.[i] || null,
+      iv:      optData.iv?.[i] ? parseFloat((optData.iv[i] * 100).toFixed(1)) : null
+    }));
 
-    const rawCalls        = result?.options?.[0]?.calls || [];
-    const expirationDates = result.expirationDates || [];
-    const actualTs        = result?.options?.[0]?.expirationDate || expirationDates[0];
-    const actualDate      = new Date(actualTs * 1000);
-    const expiryLabel     = actualDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-    const hoy             = new Date(); hoy.setHours(0,0,0,0);
-    const dias            = Math.max(1, Math.ceil((actualDate - hoy) / 86400000));
-
-    const calls = rawCalls
-      .map(c => {
-        let prima = (c.lastPrice && c.lastPrice > 0) ? c.lastPrice : 0;
-        if (!prima && c.bid > 0 && c.ask > 0) prima = (c.bid + c.ask) / 2;
-        return {
-          strike:  parseFloat(c.strike),
-          prima:   parseFloat(prima.toFixed(2)),
-          bid:     c.bid          || null,
-          ask:     c.ask          || null,
-          volumen: c.volume       || null,
-          oi:      c.openInterest || null,
-          iv:      c.impliedVolatility ? parseFloat((c.impliedVolatility * 100).toFixed(1)) : null
-        };
-      })
+    // Filtrar OTM, ordenar, top 10
+    const calls = allCalls
       .filter(c => c.strike > stockPrice && c.prima > 0)
       .sort((a, b) => a.strike - b.strike)
       .slice(0, 10);
 
-    if (calls.length === 0) {
-      const available = expirationDates
-        .map(ts => new Date(ts * 1000).toISOString().split('T')[0])
-        .slice(0, 6).join(', ');
-      throw new Error(`Sin calls OTM para ese vencimiento. Fechas disponibles: ${available}`);
-    }
+    if (calls.length === 0)
+      throw new Error('Sin calls OTM con precio para ese vencimiento. Probá otra fecha.');
+
+    // Fecha real del vencimiento
+    const expLabel = expiry
+      ? new Date(expiry + 'T12:00:00').toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' })
+      : (optData.expiration?.[0] ? new Date(optData.expiration[0] * 1000).toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' }) : expiry);
+
+    const hoy  = new Date(); hoy.setHours(0,0,0,0);
+    const expD = expiry ? new Date(expiry + 'T12:00:00') : new Date(optData.expiration?.[0] * 1000);
+    const dias = Math.max(1, Math.ceil((expD - hoy) / 86400000));
 
     return {
       statusCode: 200, headers: hdrs,
-      body: JSON.stringify({ ticker, stockPrice, stockChange, high52, low52, expiryLabel, dias, calls })
+      body: JSON.stringify({ ticker, stockPrice, stockChange, high52, low52, expiryLabel: expLabel, dias, calls })
     };
 
-  } catch (err) {
+  } catch(err) {
     return { statusCode: 500, headers: hdrs, body: JSON.stringify({ error: err.message }) };
   }
 };
