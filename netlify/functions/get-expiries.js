@@ -7,46 +7,50 @@ exports.handler = async function(event) {
   if (!TOKEN) return { statusCode: 500, headers: hdrs, body: JSON.stringify({ error: 'MARKETDATA_TOKEN no configurado' }) };
 
   try {
-    // Traer toda la cadena sin filtrar expiry para obtener todas las fechas
-    // Usamos strikeLimit=1 para minimizar datos — solo necesitamos las fechas
+    const hoy = new Date(); hoy.setHours(0,0,0,0);
+    const seisMeses = new Date(hoy); seisMeses.setMonth(seisMeses.getMonth() + 6);
+
+    const fromDate = hoy.toISOString().split('T')[0];
+    const toDate   = seisMeses.toISOString().split('T')[0];
+
+    // Pedir la cadena completa sin filtrar — así trae todas las fechas disponibles
     const res = await fetch(
-      `https://api.marketdata.app/v1/options/chain/${ticker}/?side=call&strikeLimit=1`,
+      `https://api.marketdata.app/v1/options/chain/${ticker}/?side=call&from=${fromDate}&to=${toDate}`,
       { headers: { 'Authorization': `Bearer ${TOKEN}` } }
     );
+
     if (!res.ok) throw new Error(`MarketData respondió ${res.status}`);
     const data = await res.json();
 
     if (!data.expiration || data.expiration.length === 0)
-      throw new Error('Sin fechas de expiración disponibles');
+      throw new Error('Sin fechas de expiración disponibles para ' + ticker);
 
-    const hoy = new Date(); hoy.setHours(0,0,0,0);
-    const seisMeses = new Date(hoy); seisMeses.setMonth(seisMeses.getMonth() + 6);
-
-    // Agrupar por fecha y sumar volumen
+    // Agrupar por fecha sumando volumen y OI
     const fechaMap = {};
     data.expiration.forEach((ts, i) => {
       const d = new Date(ts * 1000);
-      if (d < hoy || d > seisMeses) return;
       const key = d.toISOString().split('T')[0]; // YYYY-MM-DD
-      if (!fechaMap[key]) fechaMap[key] = { ts, vol: 0, oi: 0, count: 0 };
-      fechaMap[key].vol   += data.volume?.[i]       || 0;
-      fechaMap[key].oi    += data.openInterest?.[i] || 0;
-      fechaMap[key].count += 1;
+      if (!fechaMap[key]) fechaMap[key] = { vol: 0, oi: 0 };
+      fechaMap[key].vol += data.volume?.[i]       || 0;
+      fechaMap[key].oi  += data.openInterest?.[i] || 0;
     });
 
-    // Ordenar por fecha, tomar las que tienen mayor volumen total
+    // Convertir a array, ordenar por fecha
     const expiries = Object.entries(fechaMap)
       .map(([date, v]) => ({
         date,
-        label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric', year:'numeric' }),
+        label: new Date(date + 'T12:00:00').toLocaleDateString('en-US', {
+          weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
+        }),
         dias: Math.ceil((new Date(date + 'T12:00:00') - hoy) / 86400000),
-        vol: v.vol,
-        oi: v.oi
+        vol:  v.vol,
+        oi:   v.oi
       }))
-      .sort((a, b) => a.dias - b.dias); // ordenar por fecha asc
+      .filter(e => e.dias > 0)
+      .sort((a, b) => a.dias - b.dias);
 
-    // Marcar las 3 de mayor volumen
-    const maxVol = Math.max(...expiries.map(e => e.vol));
+    // Marcar las de mayor volumen (top 50% del máximo)
+    const maxVol = Math.max(...expiries.map(e => e.vol), 1);
     expiries.forEach(e => { e.topVol = e.vol >= maxVol * 0.5; });
 
     return {
