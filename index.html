@@ -284,8 +284,8 @@ function render(d){
     const rendimiento=(c.strike+c.prima)/stockPrice-1;
     const tna=rendimiento/dias*365;
     const otmPct=(c.strike/stockPrice-1)*100;
-    const protPct=(c.prima/stockPrice)*100;
-    const protDolar=c.prima;
+    const protPct=(c.prima/stockPrice)*100;          // % que puede bajar la acción antes de perder
+    const protDolar=stockPrice-c.prima;               // precio de BE: hasta acá puede bajar
     const ratioTnaOtm=otmPct>0?(tna*100/otmPct):0;
     const maxGain=(c.strike-stockPrice+c.prima)*100;
     return{...c,rendimiento,tna,otmPct,protPct,protDolar,ratioTnaOtm,beLanzador:stockPrice-c.prima,maxGain};
@@ -335,7 +335,7 @@ function render(d){
     aCard('aCard1','MEJOR TNA',`$${fmt(ejR.strike,0)} · ${(ejR.tna*100).toFixed(1)}%`,`Prima $${fmt(ejR.prima)} · Prot. ${ejR.protPct.toFixed(2)}%`,'var(--green)');
     aCard('aCard2','MEJOR RATIO TNA/OTM',`$${fmt(br.strike,0)} · ${br.ratioTnaOtm.toFixed(2)}x`,`${(br.tna*100).toFixed(1)}% TNA por ${br.otmPct.toFixed(1)}% OTM`,'var(--blue)');
     aCard('aCard3','MAYOR PROTECCIÓN (TNA≥8%)',`$${fmt(bp.strike,0)} · ${bp.protPct.toFixed(2)}%`,`Baja hasta $${fmt(bp.beLanzador)} · TNA ${(bp.tna*100).toFixed(1)}%`,'var(--yellow)');
-    aCard('aCard4','BREAK-EVEN LANZADOR',`$${fmt(ejR.beLanzador)}`,`Caída cubierta: $${fmt(ejR.protDolar)} (${ejR.protPct.toFixed(2)}%)`,'var(--orange)');
+    aCard('aCard4','BREAK-EVEN LANZADOR',`$${fmt(ejR.protDolar)}`,`Acción puede bajar ${ejR.protPct.toFixed(2)}% (Prima: $${fmt(ejR.prima)})`,'var(--orange)');
     aCard('aCard5','MÁX. GANANCIA (1 LOTE)',`$${fmt(ejR.maxGain,0)}`,`Strike $${fmt(ejR.strike,0)} · si se ejerce al vto.`,'var(--green)');
     const riesgo=((stockPrice-ejR.beLanzador)/stockPrice*100);
     const alertColor=riesgo<3?'var(--green)':riesgo<7?'var(--yellow)':'var(--red)';
@@ -390,7 +390,7 @@ function render(d){
         </div>
         <div class="tbl-outer">
           <table class="bb-table">
-            <thead><tr><th>STRIKE</th><th>%OTM</th><th>PRIMA</th><th>PROT%</th><th>PROT$</th><th>REND%</th><th>TNA</th><th>RATIO</th><th>B/E</th><th>OI</th><th>SEÑAL</th></tr></thead>
+            <thead><tr><th>STRIKE</th><th>%OTM</th><th>PRIMA</th><th>PROT%</th><th>BE LANZADOR</th><th>REND%</th><th>TNA</th><th>RATIO</th><th>OI</th><th>SEÑAL</th></tr></thead>
             <tbody id="tbody"></tbody>
           </table>
         </div>
@@ -398,8 +398,8 @@ function render(d){
       <div style="display:flex;flex-direction:column;gap:6px">
         <div class="bb-panel">
           <div class="bb-panel-header">
-            <span class="bb-panel-title">TNA % BY STRIKE</span>
-            <span class="bb-panel-sub"><span style="color:var(--green)">■</span>≥30% <span style="color:var(--blue)">■</span>≥15% <span style="color:var(--yellow)">■</span>≥8%</span>
+            <span class="bb-panel-title">TNA% vs OTM% · SCATTER</span>
+            <span class="bb-panel-sub">◆ cada punto = 1 strike &nbsp;|&nbsp; <span style="color:var(--green)">■</span>≥30% <span style="color:var(--blue)">■</span>≥15% <span style="color:var(--yellow)">■</span>≥8%</span>
           </div>
           <div class="ch-wrap"><canvas id="chTNA" height="${mobile?110:155}"></canvas></div>
         </div>
@@ -428,29 +428,122 @@ function render(d){
       <td data-label="%OTM" style="color:var(--yellow)">+${r.otmPct.toFixed(1)}%</td>
       <td data-label="PRIMA" style="color:var(--orange);font-weight:700">$${fmt(r.prima)}</td>
       <td data-label="PROT%" style="color:${protColor};font-weight:700">${r.protPct.toFixed(2)}%</td>
-      <td data-label="PROT$" style="color:${protColor}">$${fmt(r.protDolar)}</td>
+      <td data-label="BE LANZADOR" style="color:${protColor}">$${fmt(r.protDolar)}</td>
       <td data-label="REND%">${(r.rendimiento*100).toFixed(2)}%</td>
       <td data-label="TNA">${badge(r.tna)}</td>
       <td data-label="RATIO" style="color:${ratioColor};font-weight:700">${r.ratioTnaOtm.toFixed(2)}x</td>
-      <td data-label="B/E" style="color:var(--blue)">$${fmt(r.beLanzador)}</td>
       <td data-label="OI" style="color:var(--muted)">${r.oi?parseInt(r.oi).toLocaleString():'—'}</td>
       <td data-label="SEÑAL">${señal(r.tna,r.protPct,r.oi,r.otmPct)}</td>`;
     tbody.appendChild(tr);
   });
 
-  // Chart TNA
+  // Chart TNA — scatter plot OTM% vs TNA%
   dc('c1');
-  const tnaVals=rows.map(r=>parseFloat((r.tna*100).toFixed(2)));
+  const scatterData = rows.map(r=>({
+    x: parseFloat(r.otmPct.toFixed(2)),
+    y: parseFloat((r.tna*100).toFixed(2)),
+    strike: r.strike,
+    prima: r.prima,
+    prot: r.protPct.toFixed(2),
+    ratio: r.ratioTnaOtm.toFixed(2)
+  }));
+  const pointColors = scatterData.map(p=>p.y>=30?'#00c04b':p.y>=15?'#00a8e0':p.y>=8?'#ffcc00':'#e8002d');
+  const pointBorders = pointColors;
+
+  // Curva de tendencia suavizada (sort by x, fit)
+  const sorted = [...scatterData].sort((a,b)=>a.x-b.x);
+  const curveData = sorted.map(p=>({x:p.x, y:p.y}));
+
   charts['c1']=new Chart(document.getElementById('chTNA'),{
-    type:'bar',
-    data:{labels:rows.map(r=>'$'+fmt(r.strike,0)),datasets:[{
-      data:tnaVals,
-      backgroundColor:tnaVals.map(v=>v>=30?'rgba(0,192,75,.7)':v>=15?'rgba(0,168,224,.7)':v>=8?'rgba(255,204,0,.7)':'rgba(232,0,45,.6)'),
-      borderColor:tnaVals.map(v=>v>=30?'#00c04b':v>=15?'#00a8e0':v>=8?'#ffcc00':'#e8002d'),
-      borderWidth:1,borderRadius:0
-    }]},
-    options:{...COPTS,plugins:{...COPTS.plugins,tooltip:{callbacks:{label:ctx=>ctx.raw+'% TNA'}}},
-      scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>v+'%'}}}}
+    type:'scatter',
+    data:{
+      datasets:[
+        {
+          label:'Bases OTM',
+          data: scatterData,
+          backgroundColor: pointColors.map(c=>c+'cc'),
+          borderColor: pointBorders,
+          borderWidth: 2,
+          pointRadius: mobile?7:9,
+          pointHoverRadius: mobile?9:12,
+          pointStyle:'diamond'
+        },
+        {
+          label:'Curva',
+          data: curveData,
+          type:'line',
+          borderColor:'rgba(0,168,224,0.3)',
+          borderWidth:1.5,
+          borderDash:[4,4],
+          pointRadius:0,
+          fill:false,
+          tension:0.4,
+          order:1
+        }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          callbacks:{
+            label: ctx => {
+              const p=ctx.raw;
+              return [
+                `Strike: $${fmt(p.strike,0)}`,
+                `TNA: ${p.y}%`,
+                `OTM: +${p.x}%`,
+                `Prima: $${fmt(p.prima)}`,
+                `Prot: ${p.prot}%`,
+                `Ratio: ${p.ratio}x`
+              ];
+            }
+          },
+          backgroundColor:'#1c1c1c',
+          borderColor:'#333',
+          borderWidth:1,
+          titleColor:'#f5821f',
+          bodyColor:'#ccc',
+          padding:10
+        }
+      },
+      scales:{
+        x:{
+          title:{display:true,text:'% OTM →',color:'#666',font:{family:'IBM Plex Mono',size:9}},
+          grid:{color:'rgba(42,42,42,0.8)'},
+          ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9},callback:v=>'+'+v+'%'}
+        },
+        y:{
+          title:{display:true,text:'TNA % →',color:'#666',font:{family:'IBM Plex Mono',size:9}},
+          grid:{color:'rgba(42,42,42,0.8)'},
+          ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9},callback:v=>v+'%'}
+        }
+      }
+    }
+  });
+
+  // Labels encima de cada punto
+  // (Chart.js no tiene labels nativos en scatter, usamos afterDraw plugin)
+  Chart.register({
+    id:'scatterLabels_'+Date.now(),
+    afterDatasetsDraw(chart){
+      if(chart.canvas.id!=='chTNA')return;
+      const ctx2=chart.ctx;
+      const ds=chart.data.datasets[0];
+      if(!ds)return;
+      ctx2.save();
+      ctx2.font=`600 ${mobile?8:9}px IBM Plex Mono`;
+      ctx2.textAlign='center';
+      chart.data.datasets[0].data.forEach((pt,i)=>{
+        const meta=chart.getDatasetMeta(0);
+        if(!meta.data[i])return;
+        const{x,y}=meta.data[i].getProps(['x','y'],true);
+        ctx2.fillStyle='#e8e8e8';
+        ctx2.fillText('$'+fmt(pt.strike,0), x, y-14);
+      });
+      ctx2.restore();
+    }
   });
 
   // Chart P&L
