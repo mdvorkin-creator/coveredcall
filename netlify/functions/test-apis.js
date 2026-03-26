@@ -1,42 +1,52 @@
 exports.handler = async function(event) {
   const results = {};
-  
-  // Test 1: Tradier sandbox (free, no real account needed for test)
-  try {
-    const r = await fetch('https://sandbox.tradier.com/v1/markets/quotes?symbols=META', {
-      headers: { 'Authorization': 'Bearer SANDBOX_TOKEN', 'Accept': 'application/json' }
-    });
-    results.tradier_sandbox = r.status;
-  } catch(e) { results.tradier_sandbox = 'ERROR: ' + e.message; }
+  const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36';
 
-  // Test 2: Polygon.io free (needs real key but reachability test)
+  // Test 1: Yahoo Finance precio (sabemos que funciona)
   try {
-    const r = await fetch('https://api.polygon.io/v2/aggs/ticker/META/range/1/day/2024-01-01/2024-01-02?apiKey=test', { signal: AbortSignal.timeout(5000) });
-    results.polygon = r.status;
-    const d = await r.json(); results.polygon_body = JSON.stringify(d).slice(0,100);
-  } catch(e) { results.polygon = 'ERROR: ' + e.message; }
+    const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/META?interval=1d&range=1d', { headers: { 'User-Agent': UA } });
+    const d = await r.json();
+    results.yahoo_price = { status: r.status, price: d?.chart?.result?.[0]?.meta?.regularMarketPrice };
+  } catch(e) { results.yahoo_price = { error: e.message }; }
 
-  // Test 3: Finnhub (free tier real key needed)
+  // Test 2: Yahoo opciones sin auth
   try {
-    const r = await fetch('https://finnhub.io/api/v1/quote?symbol=META&token=test', { signal: AbortSignal.timeout(5000) });
-    results.finnhub = r.status;
-  } catch(e) { results.finnhub = 'ERROR: ' + e.message; }
+    const r = await fetch('https://query1.finance.yahoo.com/v7/finance/options/META', { headers: { 'User-Agent': UA, 'Referer': 'https://finance.yahoo.com/' } });
+    const d = await r.json();
+    const calls = d?.optionChain?.result?.[0]?.options?.[0]?.calls;
+    results.yahoo_options = { status: r.status, calls_count: calls?.length, first_strike: calls?.[0]?.strike };
+  } catch(e) { results.yahoo_options = { error: e.message }; }
 
-  // Test 4: Yahoo via different approach
+  // Test 3: Unusual Whales (free, delay)
   try {
-    const r = await fetch('https://query1.finance.yahoo.com/v8/finance/chart/META?range=1d&interval=1d', {
-      headers: { 'User-Agent': 'Mozilla/5.0' }, signal: AbortSignal.timeout(5000)
-    });
-    results.yahoo = r.status;
-    if (r.ok) { const d = await r.json(); results.yahoo_price = d?.chart?.result?.[0]?.meta?.regularMarketPrice; }
-  } catch(e) { results.yahoo = 'ERROR: ' + e.message; }
+    const r = await fetch('https://api.unusualwhales.com/api/stock/META/option-chains', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(5000) });
+    results.unusual_whales = { status: r.status };
+  } catch(e) { results.unusual_whales = { error: e.message }; }
 
-  // Test 5: Alpha Vantage (free 25 req/day)
+  // Test 4: Tradier sandbox (sin key)
   try {
-    const r = await fetch('https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=META&apikey=demo', { signal: AbortSignal.timeout(5000) });
-    results.alphavantage = r.status;
-    const d = await r.json(); results.av_body = JSON.stringify(d).slice(0,150);
-  } catch(e) { results.alphavantage = 'ERROR: ' + e.message; }
+    const r = await fetch('https://sandbox.tradier.com/v1/markets/options/chains?symbol=META&expiration=2026-04-17', { headers: { 'Authorization': 'Bearer INVALID', 'Accept': 'application/json' }, signal: AbortSignal.timeout(5000) });
+    results.tradier = { status: r.status };
+  } catch(e) { results.tradier = { error: e.message }; }
+
+  // Test 5: MarketData.app (free tier 100 req/day sin tarjeta)
+  try {
+    const r = await fetch('https://api.marketdata.app/v1/options/chain/META/?expiration=2026-04-17', { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(5000) });
+    const d = await r.json();
+    results.marketdata_app = { status: r.status, body: JSON.stringify(d).slice(0, 150) };
+  } catch(e) { results.marketdata_app = { error: e.message }; }
+
+  // Test 6: Yahoo opciones con cookie flow
+  try {
+    const init = await fetch('https://finance.yahoo.com/quote/META', { headers: { 'User-Agent': UA } });
+    const cookie = (init.headers.get('set-cookie') || '').split(',').map(c => c.trim().split(';')[0]).join('; ');
+    const crumbR = await fetch('https://query1.finance.yahoo.com/v1/test/csrfToken', { headers: { 'User-Agent': UA, 'Cookie': cookie } });
+    const crumb = (await crumbR.text()).trim();
+    const optR = await fetch(`https://query1.finance.yahoo.com/v7/finance/options/META?crumb=${encodeURIComponent(crumb)}`, { headers: { 'User-Agent': UA, 'Cookie': cookie } });
+    const d = await optR.json();
+    const calls = d?.optionChain?.result?.[0]?.options?.[0]?.calls;
+    results.yahoo_options_cookie = { status: optR.status, crumb_len: crumb.length, calls_count: calls?.length, first_strike: calls?.[0]?.strike };
+  } catch(e) { results.yahoo_options_cookie = { error: e.message }; }
 
   return {
     statusCode: 200,
