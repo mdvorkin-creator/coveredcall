@@ -2,313 +2,171 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
 <title>COVERCALL TERMINAL</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@300;400;500;600;700&family=IBM+Plex+Sans:wght@300;400;500;600;700&display=swap');
 
 :root {
-  --bb: #0a0a0a;
-  --bg: #111111;
-  --panel: #161616;
-  --panel2: #1c1c1c;
-  --border: #2a2a2a;
-  --border2: #333333;
-  --orange: #f5821f;
-  --orange2: #ff9a3c;
-  --red: #e8002d;
-  --green: #00c04b;
-  --blue: #00a8e0;
-  --yellow: #ffcc00;
-  --white: #e8e8e8;
-  --muted: #666666;
-  --muted2: #444444;
-  --text: #cccccc;
+  --bb:#0a0a0a; --bg:#111; --panel:#161616; --panel2:#1c1c1c;
+  --border:#2a2a2a; --border2:#333;
+  --orange:#f5821f; --orange2:#ff9a3c;
+  --red:#e8002d; --green:#00c04b; --blue:#00a8e0; --yellow:#ffcc00;
+  --white:#e8e8e8; --muted:#666; --muted2:#444; --text:#ccc;
 }
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{background:var(--bb);color:var(--text);font-family:'IBM Plex Mono',monospace;min-height:100vh;font-size:12px;overflow-x:hidden}
 
-* { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { background: var(--bb); color: var(--text); font-family: 'IBM Plex Mono', monospace; min-height: 100vh; font-size: 12px; }
+/* HEADER */
+.bb-header{background:var(--orange);height:32px;display:flex;align-items:center;padding:0 10px;gap:8px;position:sticky;top:0;z-index:200}
+.bb-logo{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:13px;color:#000;letter-spacing:-0.5px;white-space:nowrap}
+.bb-logo span{font-weight:300}
+.bb-nav{display:flex;margin-left:6px}
+.bb-nav-item{font-size:9px;font-weight:700;color:#000;padding:0 8px;height:32px;display:flex;align-items:center;cursor:pointer;letter-spacing:.5px;border-right:1px solid rgba(0,0,0,.2);transition:background .1s;white-space:nowrap}
+.bb-nav-item:hover{background:rgba(0,0,0,.15)}
+.bb-nav-item.active{background:#000;color:var(--orange)}
+.bb-time{margin-left:auto;font-size:9px;font-weight:700;color:#000;letter-spacing:1px;white-space:nowrap}
+@media(max-width:600px){.bb-nav{display:none}.bb-logo{font-size:12px}}
 
-/* ── HEADER BLOOMBERG ── */
-.bb-header {
-  background: var(--orange);
-  height: 28px;
-  display: flex;
-  align-items: center;
-  padding: 0 12px;
-  gap: 16px;
-}
-.bb-logo {
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-weight: 700;
-  font-size: 14px;
-  color: #000;
-  letter-spacing: -0.5px;
-}
-.bb-logo span { font-weight: 300; }
-.bb-nav {
-  display: flex;
-  gap: 0;
-  margin-left: 8px;
-}
-.bb-nav-item {
-  font-size: 10px;
-  font-weight: 600;
-  color: #000;
-  padding: 0 10px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  letter-spacing: 0.5px;
-  border-right: 1px solid rgba(0,0,0,0.2);
-  transition: background 0.1s;
-}
-.bb-nav-item:hover { background: rgba(0,0,0,0.15); }
-.bb-nav-item.active { background: #000; color: var(--orange); }
-.bb-time {
-  margin-left: auto;
-  font-size: 10px;
-  font-weight: 600;
-  color: #000;
-  letter-spacing: 1px;
-}
+/* TOOLBAR */
+.bb-toolbar{background:var(--bg);border-bottom:1px solid var(--border);padding:6px 10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;position:sticky;top:32px;z-index:199}
+.bb-toolbar-label{font-size:8px;font-weight:700;color:var(--muted);letter-spacing:2px;text-transform:uppercase;white-space:nowrap}
+.bb-input{background:#000;border:1px solid var(--border2);color:var(--orange);font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:700;padding:5px 8px;outline:none;letter-spacing:1px;text-transform:uppercase;transition:border-color .1s;-webkit-appearance:none;border-radius:0}
+.bb-input:focus{border-color:var(--orange)}
+.bb-input.ticker{width:75px}
+.bb-input.date{width:135px;font-size:11px;color:var(--white)}
+.bb-sep{width:1px;height:18px;background:var(--border2);flex-shrink:0}
+.bb-btn{background:var(--orange);color:#000;border:none;font-family:'IBM Plex Mono',monospace;font-weight:700;font-size:10px;letter-spacing:1.5px;padding:6px 14px;cursor:pointer;text-transform:uppercase;transition:background .1s;white-space:nowrap;-webkit-appearance:none;border-radius:0;touch-action:manipulation}
+.bb-btn:hover:not(:disabled){background:var(--orange2)}
+.bb-btn:active:not(:disabled){transform:scale(.97)}
+.bb-btn:disabled{opacity:.4;cursor:wait}
+.bb-status{font-size:9px;font-weight:700;letter-spacing:1px;padding:3px 7px;border:1px solid;white-space:nowrap}
+.st-idle{color:var(--muted);border-color:var(--muted2)}
+.st-loading{color:var(--yellow);border-color:var(--yellow);animation:blink .8s step-end infinite}
+.st-ok{color:var(--green);border-color:var(--green)}
+.st-err{color:var(--red);border-color:var(--red)}
+@keyframes blink{50%{opacity:.3}}
 
-/* ── TOOLBAR ── */
-.bb-toolbar {
-  background: var(--bg);
-  border-bottom: 1px solid var(--border);
-  padding: 0 12px;
-  height: 36px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.bb-toolbar-label {
-  font-size: 9px;
-  font-weight: 600;
-  color: var(--muted);
-  letter-spacing: 2px;
-  text-transform: uppercase;
-  white-space: nowrap;
-}
-.bb-input {
-  background: #000;
-  border: 1px solid var(--border2);
-  color: var(--orange);
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 12px;
-  font-weight: 700;
-  padding: 4px 8px;
-  outline: none;
-  letter-spacing: 1px;
-  text-transform: uppercase;
-  transition: border-color 0.1s;
-}
-.bb-input:focus { border-color: var(--orange); }
-.bb-input.ticker { width: 80px; font-size: 14px; }
-.bb-input.date { width: 130px; font-size: 11px; color: var(--white); }
-.bb-sep { width: 1px; height: 20px; background: var(--border2); }
-.bb-btn {
-  background: var(--orange);
-  color: #000;
-  border: none;
-  font-family: 'IBM Plex Mono', monospace;
-  font-weight: 700;
-  font-size: 10px;
-  letter-spacing: 2px;
-  padding: 5px 14px;
-  cursor: pointer;
-  text-transform: uppercase;
-  transition: background 0.1s;
-  white-space: nowrap;
-}
-.bb-btn:hover:not(:disabled) { background: var(--orange2); }
-.bb-btn:disabled { opacity: 0.4; cursor: wait; }
-.bb-status {
-  font-size: 9px;
-  font-weight: 600;
-  letter-spacing: 1px;
-  padding: 3px 8px;
-  border: 1px solid;
-  white-space: nowrap;
-}
-.st-idle { color: var(--muted); border-color: var(--muted2); }
-.st-loading { color: var(--yellow); border-color: var(--yellow); animation: blink 0.8s step-end infinite; }
-.st-ok { color: var(--green); border-color: var(--green); }
-.st-err { color: var(--red); border-color: var(--red); }
-@keyframes blink { 50% { opacity: 0.3; } }
+/* TICKER STRIP */
+.ticker-strip{background:#000;border-bottom:2px solid var(--orange);height:22px;display:flex;align-items:center;overflow:hidden}
+.ticker-inner{display:flex;gap:28px;white-space:nowrap;animation:marquee 30s linear infinite;padding-left:100%}
+@keyframes marquee{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+.tick-item{font-size:10px;font-weight:500;color:var(--muted)}
+.tick-item .tsym{color:var(--white);font-weight:700;margin-right:5px}
+.tpos{color:var(--green)} .tneg{color:var(--red)}
 
-/* ── TICKER STRIP ── */
-.ticker-strip {
-  background: #000;
-  border-bottom: 2px solid var(--orange);
-  height: 22px;
-  display: flex;
-  align-items: center;
-  overflow: hidden;
-  position: relative;
-}
-.ticker-strip-inner {
-  display: flex;
-  gap: 32px;
-  white-space: nowrap;
-  animation: marquee 30s linear infinite;
-  padding-left: 100%;
-}
-@keyframes marquee { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
-.tick-item { font-size: 10px; font-weight: 500; color: var(--muted); letter-spacing: 0.5px; }
-.tick-item .tsym { color: var(--white); font-weight: 700; margin-right: 6px; }
-.tick-item .tpos { color: var(--green); }
-.tick-item .tneg { color: var(--red); }
+/* SPLASH */
+.bb-splash{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:calc(100vh - 90px);gap:14px;text-align:center;padding:20px}
+.bb-splash-title{font-family:'IBM Plex Sans',sans-serif;font-size:10px;font-weight:700;letter-spacing:4px;text-transform:uppercase;color:var(--muted)}
+.bb-splash-sub{font-size:10px;color:var(--muted2);line-height:2.2;letter-spacing:.5px}
+.bb-loading-dots::after{content:'.';animation:dots 1.2s steps(3,end) infinite}
+@keyframes dots{0%{content:'.'}33%{content:'..'}66%{content:'...'}100%{content:'.'}}
 
-/* ── MAIN LAYOUT ── */
-.bb-main { display: flex; flex-direction: column; }
-
-/* ── SPLASH ── */
-.bb-splash {
-  display: flex; flex-direction: column; align-items: center; justify-content: center;
-  min-height: calc(100vh - 128px); gap: 16px; color: var(--muted2); text-align: center;
-}
-.bb-splash-title {
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-size: 11px; font-weight: 600; letter-spacing: 4px; text-transform: uppercase; color: var(--muted);
-}
-.bb-splash-sub { font-size: 10px; color: var(--muted2); line-height: 2; letter-spacing: 0.5px; }
-.bb-loading-dots::after { content: '...'; animation: dots 1.2s steps(4,end) infinite; }
-@keyframes dots { 0%,100%{content:'.'} 33%{content:'..'} 66%{content:'...'} }
-
-/* ── CONTENT ── */
-.bb-content { padding: 8px; display: flex; flex-direction: column; gap: 8px; }
+/* CONTENT */
+.bb-content{padding:6px;display:flex;flex-direction:column;gap:6px}
 
 /* QUOTE BAR */
-.quote-bar {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--orange);
-  padding: 10px 14px;
-  display: flex;
-  align-items: center;
-  gap: 0;
-  flex-wrap: wrap;
+.quote-bar{background:var(--panel);border:1px solid var(--border);border-left:3px solid var(--orange);padding:10px 12px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.q-ticker{font-family:'IBM Plex Sans',sans-serif;font-weight:700;font-size:20px;color:var(--orange);letter-spacing:-.5px;min-width:70px}
+.q-price{font-size:18px;font-weight:700;color:var(--white)}
+.q-chg{font-size:11px;font-weight:700}
+.q-chg.pos{color:var(--green)} .q-chg.neg{color:var(--red)}
+.q-stats{display:flex;gap:0;margin-left:auto;flex-wrap:wrap}
+.q-stat{text-align:center;padding:4px 10px;border-left:1px solid var(--border2)}
+.q-stat-l{font-size:7px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase}
+.q-stat-v{font-size:12px;font-weight:700;color:var(--white);margin-top:2px}
+@media(max-width:600px){
+  .q-stats{width:100%;margin-left:0;margin-top:8px}
+  .q-stat{flex:1;min-width:0;padding:4px 4px}
+  .q-stat:first-child{border-left:none}
+  .q-stat-v{font-size:10px}
+  .q-stat-l{font-size:6px}
 }
-.q-ticker {
-  font-family: 'IBM Plex Sans', sans-serif;
-  font-weight: 700; font-size: 22px; color: var(--orange);
-  letter-spacing: -0.5px; margin-right: 16px; min-width: 80px;
-}
-.q-price {
-  font-size: 20px; font-weight: 700; color: var(--white);
-  letter-spacing: -0.5px; margin-right: 10px;
-}
-.q-chg { font-size: 11px; font-weight: 600; margin-right: 24px; }
-.q-chg.pos { color: var(--green); }
-.q-chg.neg { color: var(--red); }
-
-.q-stats { display: flex; gap: 24px; margin-left: auto; flex-wrap: wrap; }
-.q-stat { text-align: center; padding: 0 12px; border-left: 1px solid var(--border2); }
-.q-stat:first-child { border-left: none; }
-.q-stat-l { font-size: 8px; font-weight: 600; letter-spacing: 1.5px; color: var(--muted); text-transform: uppercase; }
-.q-stat-v { font-size: 13px; font-weight: 700; color: var(--white); margin-top: 2px; }
 
 /* FORMULA BAR */
-.formula-bar {
-  background: #000;
-  border: 1px solid var(--border);
-  border-left: 3px solid var(--blue);
-  padding: 7px 14px;
-  font-size: 10px;
-  color: var(--blue);
-  letter-spacing: 0.5px;
-  display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
-}
-.formula-bar .f-label { color: var(--muted); font-size: 9px; letter-spacing: 1.5px; text-transform: uppercase; }
-.formula-bar .f-eq { color: var(--white); font-weight: 600; }
-.formula-bar .f-result { color: var(--orange); font-size: 13px; font-weight: 700; margin-left: auto; }
-
-/* GRID 2 PANELES */
-.bb-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.formula-bar{background:#000;border:1px solid var(--border);border-left:3px solid var(--blue);padding:6px 12px;font-size:9px;color:var(--blue);letter-spacing:.3px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.f-label{color:var(--muted);font-size:8px;letter-spacing:1.5px;text-transform:uppercase;white-space:nowrap}
+.f-eq{color:var(--white);font-weight:600}
+.f-result{color:var(--orange);font-size:12px;font-weight:700;margin-left:auto;white-space:nowrap}
+.f-mid{color:var(--muted)}
+@media(max-width:600px){.f-mid{display:none}.formula-bar{font-size:8px}}
 
 /* PANEL */
-.bb-panel { background: var(--panel); border: 1px solid var(--border); }
-.bb-panel-header {
-  background: var(--panel2);
-  border-bottom: 1px solid var(--border);
-  padding: 5px 10px;
-  display: flex; align-items: center; justify-content: space-between;
-}
-.bb-panel-title {
-  font-size: 9px; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: var(--orange);
-}
-.bb-panel-sub { font-size: 9px; color: var(--muted); letter-spacing: 0.5px; }
-.bb-panel-body { padding: 0; }
+.bb-panel{background:var(--panel);border:1px solid var(--border)}
+.bb-panel-header{background:var(--panel2);border-bottom:1px solid var(--border);padding:5px 10px;display:flex;align-items:center;justify-content:space-between}
+.bb-panel-title{font-size:8px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--orange)}
+.bb-panel-sub{font-size:8px;color:var(--muted);letter-spacing:.5px}
+
+/* GRID */
+.bb-grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+@media(max-width:900px){.bb-grid{grid-template-columns:1fr}}
 
 /* TABLE */
-.bb-table { width: 100%; border-collapse: collapse; }
-.bb-table thead th {
-  background: #000;
-  padding: 5px 10px; text-align: right;
-  font-size: 8px; font-weight: 700; letter-spacing: 1.5px;
-  color: var(--muted); text-transform: uppercase;
-  border-bottom: 1px solid var(--border);
-  white-space: nowrap;
-}
-.bb-table thead th:first-child { text-align: left; }
-.bb-table tbody td {
-  padding: 6px 10px; text-align: right;
-  border-bottom: 1px solid var(--border2);
-  font-size: 11px; font-weight: 500;
-}
-.bb-table tbody td:first-child { text-align: left; font-weight: 700; color: var(--white); }
-.bb-table tbody tr:hover { background: rgba(245,130,31,0.05); }
-.bb-table tbody tr.bb-best { background: rgba(245,130,31,0.08); border-left: 2px solid var(--orange); }
-.bb-table tbody tr.bb-best td { color: var(--orange); }
-.bb-table tbody tr:last-child td { border-bottom: none; }
+.tbl-outer{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.bb-table{width:100%;border-collapse:collapse;min-width:560px}
+.bb-table thead th{background:#000;padding:6px 8px;text-align:right;font-size:8px;font-weight:700;letter-spacing:1.2px;color:var(--muted);text-transform:uppercase;border-bottom:1px solid var(--border);white-space:nowrap}
+.bb-table thead th:first-child{text-align:left}
+.bb-table tbody td{padding:7px 8px;text-align:right;border-bottom:1px solid var(--border2);font-size:11px;font-weight:500}
+.bb-table tbody td:first-child{text-align:left;font-weight:700;color:var(--white)}
+.bb-table tbody tr:hover{background:rgba(245,130,31,.05)}
+.bb-table tbody tr.bb-best{background:rgba(245,130,31,.08)}
+.bb-table tbody tr.bb-best td{color:var(--orange)}
+.bb-table tbody tr:last-child td{border-bottom:none}
 
-/* TNA CHIPS */
-.bb-chip {
-  display: inline-block; padding: 1px 6px;
-  font-size: 10px; font-weight: 700; letter-spacing: 0.5px;
-  border: 1px solid;
+/* MOBILE: card rows */
+@media(max-width:600px){
+  .tbl-outer{overflow-x:visible}
+  .bb-table{min-width:unset}
+  .bb-table thead{display:none}
+  .bb-table tbody{display:flex;flex-direction:column;gap:1px}
+  .bb-table tbody tr{display:grid;grid-template-columns:1fr 1fr 1fr;padding:8px;background:var(--panel2);border-bottom:1px solid var(--border);gap:6px 8px}
+  .bb-table tbody tr.bb-best{border-left:3px solid var(--orange)}
+  .bb-table tbody td{padding:0;text-align:left;border-bottom:none;font-size:11px}
+  .bb-table tbody td:first-child{grid-column:1/-1;font-size:14px;color:var(--orange);border-bottom:1px solid var(--border2);padding-bottom:5px;margin-bottom:2px}
+  .bb-table tbody td::before{content:attr(data-label);display:block;font-size:7px;font-weight:700;letter-spacing:1.5px;color:var(--muted);text-transform:uppercase;margin-bottom:2px}
+  .bb-table tbody td:first-child::before{display:none}
 }
-.ch-hi { color: var(--green);  border-color: var(--green);  background: rgba(0,192,75,0.1); }
-.ch-md { color: var(--blue);   border-color: var(--blue);   background: rgba(0,168,224,0.1); }
-.ch-lo { color: var(--yellow); border-color: var(--yellow); background: rgba(255,204,0,0.1); }
-.ch-xlo{ color: var(--red);    border-color: var(--red);    background: rgba(232,0,45,0.1); }
+
+/* CHIPS */
+.bb-chip{display:inline-block;padding:1px 5px;font-size:10px;font-weight:700;letter-spacing:.5px;border:1px solid}
+.ch-hi{color:var(--green);border-color:var(--green);background:rgba(0,192,75,.1)}
+.ch-md{color:var(--blue);border-color:var(--blue);background:rgba(0,168,224,.1)}
+.ch-lo{color:var(--yellow);border-color:var(--yellow);background:rgba(255,204,0,.1)}
+.ch-xlo{color:var(--red);border-color:var(--red);background:rgba(232,0,45,.1)}
+
+/* ANALYSIS CARDS */
+.a-card{background:var(--panel2);padding:10px 14px}
+.a-card-l{font-size:7px;font-weight:700;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px}
+.a-card-v{font-size:16px;font-weight:700;color:var(--white)}
+.a-card-sub{font-size:9px;color:var(--muted);margin-top:3px}
+@media(max-width:600px){.a-card{padding:8px 10px}.a-card-v{font-size:14px}}
 
 /* CHARTS */
-.ch-wrap { padding: 10px; }
-canvas { display: block; }
+.ch-wrap{padding:8px}
 
 /* FOOTER */
-.bb-footer {
-  background: var(--orange);
-  height: 20px; display: flex; align-items: center;
-  padding: 0 12px; gap: 16px; margin-top: 8px;
-}
-.bb-footer-item { font-size: 9px; font-weight: 700; color: #000; letter-spacing: 1px; }
-.bb-footer-item span { font-weight: 400; }
+.bb-footer{background:var(--orange);height:20px;display:flex;align-items:center;padding:0 10px;gap:12px;margin-top:6px}
+.bb-footer-item{font-size:8px;font-weight:700;color:#000;letter-spacing:1px;white-space:nowrap}
+.bb-footer-item span{font-weight:400}
+@media(max-width:600px){.bb-footer-item:not(:first-child):not(:last-child){display:none}}
 </style>
 </head>
 <body>
 
-<!-- BLOOMBERG HEADER -->
 <div class="bb-header">
-  <div class="bb-logo">COVER<span>CALL</span> <span style="font-size:10px;opacity:0.7">TERMINAL</span></div>
+  <div class="bb-logo">COVER<span>CALL</span></div>
   <div class="bb-nav">
     <div class="bb-nav-item active">OPTIONS</div>
     <div class="bb-nav-item">COVERED CALL</div>
     <div class="bb-nav-item">TNA ANALYSIS</div>
-    <div class="bb-nav-item">P&L</div>
+    <div class="bb-nav-item">P&amp;L</div>
   </div>
-  <div class="bb-time" id="bbTime">--:--:-- EST</div>
+  <div class="bb-time" id="bbTime">--:--:--</div>
 </div>
 
-<!-- TOOLBAR -->
 <div class="bb-toolbar">
-  <span class="bb-toolbar-label">SECURITY</span>
-  <input class="bb-input ticker" id="ticker" value="META" maxlength="6" oninput="this.value=this.value.toUpperCase()" placeholder="TICKER">
+  <span class="bb-toolbar-label">TICKER</span>
+  <input class="bb-input ticker" id="ticker" value="META" maxlength="6" oninput="this.value=this.value.toUpperCase()" autocomplete="off" autocorrect="off" spellcheck="false">
   <div class="bb-sep"></div>
   <span class="bb-toolbar-label">EXPIRY</span>
   <input class="bb-input date" id="expiryIn" type="date" value="2026-04-17">
@@ -317,352 +175,314 @@ canvas { display: block; }
   <span class="bb-status st-idle" id="pill">WAITING</span>
 </div>
 
-<!-- TICKER STRIP -->
 <div class="ticker-strip">
-  <div class="ticker-strip-inner" id="tickerStrip">
-    <div class="tick-item"><span class="tsym">META</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">AAPL</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">TSLA</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">NVDA</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">MSFT</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">AMZN</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">GOOGL</span><span>--</span></div>
-    <div class="tick-item"><span class="tsym">SPY</span>  <span>--</span></div>
-    <!-- duplicado para loop -->
-    <div class="tick-item"><span class="tsym">META</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">AAPL</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">TSLA</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">NVDA</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">MSFT</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">AMZN</span> <span>--</span></div>
-    <div class="tick-item"><span class="tsym">GOOGL</span><span>--</span></div>
-    <div class="tick-item"><span class="tsym">SPY</span>  <span>--</span></div>
+  <div class="ticker-inner" id="tickerStrip">
+    <div class="tick-item"><span class="tsym">META</span>——</div>
+    <div class="tick-item"><span class="tsym">AAPL</span>——</div>
+    <div class="tick-item"><span class="tsym">TSLA</span>——</div>
+    <div class="tick-item"><span class="tsym">NVDA</span>——</div>
+    <div class="tick-item"><span class="tsym">MSFT</span>——</div>
+    <div class="tick-item"><span class="tsym">SPY</span>——</div>
+    <div class="tick-item"><span class="tsym">META</span>——</div>
+    <div class="tick-item"><span class="tsym">AAPL</span>——</div>
+    <div class="tick-item"><span class="tsym">TSLA</span>——</div>
+    <div class="tick-item"><span class="tsym">NVDA</span>——</div>
+    <div class="tick-item"><span class="tsym">MSFT</span>——</div>
+    <div class="tick-item"><span class="tsym">SPY</span>——</div>
   </div>
 </div>
 
-<!-- MAIN -->
-<div class="bb-main">
-
-  <!-- SPLASH -->
-  <div id="splash" class="bb-splash">
-    <div class="bb-splash-title">COVERCALL TERMINAL · OPTIONS ANALYTICS</div>
-    <div style="width:200px;height:1px;background:var(--orange);margin:4px auto"></div>
-    <div class="bb-splash-sub">
-      ENTER SECURITY AND EXPIRY DATE<br>
-      PRESS &lt;GO&gt; TO LOAD OPTIONS CHAIN<br>
-      <span style="color:var(--muted2)">DATA PROVIDED WITH 15MIN DELAY</span>
-    </div>
+<div id="splash" class="bb-splash">
+  <div class="bb-splash-title">COVERCALL TERMINAL · OPTIONS ANALYTICS</div>
+  <div style="width:160px;height:1px;background:var(--orange);margin:0 auto"></div>
+  <div class="bb-splash-sub">
+    ENTER SECURITY AND EXPIRY DATE<br>
+    PRESS &lt;GO&gt; TO LOAD OPTIONS CHAIN<br>
+    <span style="color:var(--muted2)">DATA: 15MIN DELAY · MARKETDATA.APP</span>
   </div>
-
-  <!-- RESULTS -->
-  <div id="results" class="bb-content" style="display:none"></div>
-
 </div>
 
-<!-- FOOTER -->
-<div class="bb-footer" id="bbFooter">
+<div id="results" class="bb-content" style="display:none"></div>
+
+<div class="bb-footer">
   <div class="bb-footer-item">COVERCALL TERMINAL <span>v2.0</span></div>
-  <div class="bb-footer-item">DATA: <span>MARKETDATA.APP · 15MIN DELAY</span></div>
-  <div class="bb-footer-item">TNA: <span>((STRIKE+PRIMA)/SPOT−1)÷DÍAS×365</span></div>
-  <div class="bb-footer-item" id="footerTime" style="margin-left:auto">--:-- EST</div>
+  <div class="bb-footer-item">TNA: <span>((K+P)/S−1)÷D×365</span></div>
+  <div class="bb-footer-item">DATA: <span>15MIN DELAY</span></div>
+  <div class="bb-footer-item" id="footerTime" style="margin-left:auto">--:--</div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-
-// ── RELOJ ──────────────────────────────────────────────────────
-function updateClock() {
-  const now = new Date();
-  const est = new Date(now.toLocaleString('en-US', {timeZone:'America/New_York'}));
-  const t = est.toTimeString().slice(0,8) + ' EST';
-  document.getElementById('bbTime').textContent = t;
-  document.getElementById('footerTime').textContent = t;
+function updateClock(){
+  const est=new Date(new Date().toLocaleString('en-US',{timeZone:'America/New_York'}));
+  const t=est.toTimeString().slice(0,8);
+  document.getElementById('bbTime').textContent=t+' EST';
+  document.getElementById('footerTime').textContent=t;
 }
-updateClock(); setInterval(updateClock, 1000);
+updateClock(); setInterval(updateClock,1000);
 
-// ── UTILS ──────────────────────────────────────────────────────
-function diasHasta(dateStr) {
-  const hoy = new Date(); hoy.setHours(0,0,0,0);
-  return Math.max(1, Math.ceil((new Date(dateStr+'T00:00:00') - hoy) / 86400000));
+function diasHasta(ds){const h=new Date();h.setHours(0,0,0,0);return Math.max(1,Math.ceil((new Date(ds+'T00:00:00')-h)/86400000));}
+function fmt(n,d=2){return parseFloat(n).toLocaleString('en-US',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function setStatus(txt,type){const el=document.getElementById('pill');el.textContent=txt;el.className='bb-status st-'+type;}
+function badge(tna){
+  const p=(tna*100).toFixed(1)+'%';
+  if(tna>=0.30)return`<span class="bb-chip ch-hi">${p}</span>`;
+  if(tna>=0.15)return`<span class="bb-chip ch-md">${p}</span>`;
+  if(tna>=0.08)return`<span class="bb-chip ch-lo">${p}</span>`;
+  return`<span class="bb-chip ch-xlo">${p}</span>`;
 }
-function fmt(n, d=2) { return parseFloat(n).toLocaleString('en-US', {minimumFractionDigits:d, maximumFractionDigits:d}); }
-function setStatus(txt, type) {
-  const el = document.getElementById('pill');
-  el.textContent = txt;
-  el.className = 'bb-status st-' + type;
-}
-function badge(tna) {
-  const p = (tna*100).toFixed(1)+'%';
-  if (tna >= 0.30) return `<span class="bb-chip ch-hi">${p}</span>`;
-  if (tna >= 0.15) return `<span class="bb-chip ch-md">${p}</span>`;
-  if (tna >= 0.08) return `<span class="bb-chip ch-lo">${p}</span>`;
-  return `<span class="bb-chip ch-xlo">${p}</span>`;
-}
-
-let charts = {};
-function dc(id) { if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
-
-const CHART_OPTS = {
-  responsive: true,
-  plugins: { legend: { display: false } },
-  scales: {
-    x: { grid: { color: 'rgba(42,42,42,0.8)' }, ticks: { color: '#666', font: { family:'IBM Plex Mono', size:9 }, maxTicksLimit:8 } },
-    y: { grid: { color: 'rgba(42,42,42,0.8)' }, ticks: { color: '#666', font: { family:'IBM Plex Mono', size:9 } } }
+const isMobile=()=>window.innerWidth<=600;
+let charts={};
+function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
+const COPTS={
+  responsive:true,maintainAspectRatio:true,
+  plugins:{legend:{display:false}},
+  scales:{
+    x:{grid:{color:'rgba(42,42,42,0.8)'},ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9},maxTicksLimit:8}},
+    y:{grid:{color:'rgba(42,42,42,0.8)'},ticks:{color:'#666',font:{family:'IBM Plex Mono',size:9}}}
   }
 };
 
-// ── BUSCAR ─────────────────────────────────────────────────────
-async function buscar() {
-  const ticker = document.getElementById('ticker').value.toUpperCase().trim();
-  const expiry = document.getElementById('expiryIn').value;
-  if (!ticker || !expiry) { alert('Enter ticker and expiry'); return; }
-
-  const btn = document.getElementById('btnBuscar');
-  btn.disabled = true;
-  setStatus('LOADING...', 'loading');
-
-  document.getElementById('splash').style.display = 'flex';
-  document.getElementById('splash').innerHTML = `
-    <div class="bb-splash-title">FETCHING ${ticker} OPTIONS CHAIN<span class="bb-loading-dots"></span></div>
-    <div style="width:200px;height:1px;background:var(--orange);margin:4px auto"></div>
-    <div class="bb-splash-sub">RETRIEVING PRICE AND OTM CALLS<br>CALCULATING TNA FOR ALL STRIKES</div>
-  `;
-  document.getElementById('results').style.display = 'none';
-
-  try {
-    const res  = await fetch(`/.netlify/functions/get-options?ticker=${ticker}&expiry=${expiry}`);
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
-
-    setStatus(`${ticker} ${fmt(data.stockPrice)} ✓`, 'ok');
-    btn.disabled = false;
-    render(data);
-  } catch(err) {
-    setStatus('ERROR', 'err');
-    btn.disabled = false;
-    document.getElementById('splash').innerHTML = `
+async function buscar(){
+  const ticker=document.getElementById('ticker').value.toUpperCase().trim();
+  const expiry=document.getElementById('expiryIn').value;
+  if(!ticker||!expiry){alert('Enter ticker and expiry');return;}
+  const btn=document.getElementById('btnBuscar');
+  btn.disabled=true; setStatus('LOADING...','loading');
+  document.getElementById('splash').style.display='flex';
+  document.getElementById('splash').innerHTML=`
+    <div class="bb-splash-title">FETCHING ${ticker}<span class="bb-loading-dots"></span></div>
+    <div style="width:160px;height:1px;background:var(--orange);margin:0 auto"></div>
+    <div class="bb-splash-sub">RETRIEVING PRICE AND OTM CALLS<br>CALCULATING TNA FOR ALL STRIKES</div>`;
+  document.getElementById('results').style.display='none';
+  try{
+    const res=await fetch(`/.netlify/functions/get-options?ticker=${ticker}&expiry=${expiry}`);
+    const data=await res.json();
+    if(data.error)throw new Error(data.error);
+    setStatus(`${ticker} ${fmt(data.stockPrice)} ✓`,'ok');
+    btn.disabled=false; render(data);
+  }catch(err){
+    setStatus('ERROR','err'); btn.disabled=false;
+    document.getElementById('splash').innerHTML=`
       <div class="bb-splash-title" style="color:var(--red)">ERROR · FETCH FAILED</div>
-      <div style="width:200px;height:1px;background:var(--red);margin:4px auto"></div>
-      <div class="bb-splash-sub">${err.message}</div>
-    `;
+      <div style="width:160px;height:1px;background:var(--red);margin:0 auto"></div>
+      <div class="bb-splash-sub">${err.message}</div>`;
   }
 }
 
-// ── RENDER ─────────────────────────────────────────────────────
-function render(d) {
-  const { ticker, stockPrice, stockChange, high52, low52, expiryLabel, dias, calls } = d;
+function señal(tna, protPct, oi, otmPct) {
+  if (tna>=0.15 && protPct>=1.0 && (oi===null||oi>=100) && otmPct<=10)
+    return `<span class="bb-chip ch-hi">▲ LAUNCH</span>`;
+  if (tna>=0.08 && protPct>=0.5)
+    return `<span class="bb-chip ch-lo">~ CAUTION</span>`;
+  return `<span class="bb-chip ch-xlo">▼ SKIP</span>`;
+}
 
-  const rows = calls.map(c => {
-    const rendimiento = (c.strike + c.prima) / stockPrice - 1;
-    const tna = rendimiento / dias * 365;
-    const otmPct = (c.strike / stockPrice - 1) * 100;
-    const beLanzador = stockPrice - c.prima;
-    const maxGain = (c.strike - stockPrice + c.prima) * 100;
-    return { ...c, rendimiento, tna, otmPct, beLanzador, maxGain };
-  }).filter(r => r.tna > 0);
+function render(d){
+  const{ticker,stockPrice,stockChange,high52,low52,expiryLabel,dias,calls}=d;
+  const rows=calls.map(c=>{
+    const rendimiento=(c.strike+c.prima)/stockPrice-1;
+    const tna=rendimiento/dias*365;
+    const otmPct=(c.strike/stockPrice-1)*100;
+    const protPct=(c.prima/stockPrice)*100;
+    const protDolar=c.prima;
+    const ratioTnaOtm=otmPct>0?(tna*100/otmPct):0;
+    const maxGain=(c.strike-stockPrice+c.prima)*100;
+    return{...c,rendimiento,tna,otmPct,protPct,protDolar,ratioTnaOtm,beLanzador:stockPrice-c.prima,maxGain};
+  }).filter(r=>r.tna>0);
+  if(!rows.length){document.getElementById('splash').innerHTML=`<div class="bb-splash-title" style="color:var(--red)">NO OTM DATA AVAILABLE</div>`;return;}
 
-  if (rows.length === 0) {
-    document.getElementById('splash').innerHTML = `<div class="bb-splash-title" style="color:var(--red)">NO OTM DATA AVAILABLE</div>`;
-    return;
+  const bestIdx=rows.reduce((bi,r,i)=>r.tna>rows[bi].tna?i:bi,0);
+  // Best ratio = mejor equilibrio TNA/protección
+  const bestRatioIdx=rows.reduce((bi,r,i)=>r.ratioTnaOtm>rows[bi].ratioTnaOtm?i:bi,0);
+  // Best protection = mayor protección % con TNA aceptable (>=8%)
+  const bestProtIdx=rows.filter(r=>r.tna>=0.08).reduce((bi,r,i,arr)=>r.protPct>arr[bi].protPct?i:bi,0);
+  const ejR=rows[bestIdx];
+  const chgPos=(stockChange||0)>=0;
+  const mobile=isMobile();
+
+  // Fill analysis panel
+  function aCard(id,label,val,sub,color){
+    document.getElementById(id).innerHTML=`
+      <div class="a-card-l">${label}</div>
+      <div class="a-card-v" style="color:${color||'var(--white)'}">${val}</div>
+      <div class="a-card-sub">${sub}</div>`;
   }
+  const br=rows[bestRatioIdx], bp=rows[bestProtIdx]||rows[0];
+  const launchRows=rows.filter(r=>r.tna>=0.15&&r.protPct>=1&&r.otmPct<=10&&(!r.oi||r.oi>=100));
+  document.getElementById('analysisSub').textContent=
+    launchRows.length>0?`${launchRows.length} BASE${launchRows.length>1?'S':''} RECOMENDADA${launchRows.length>1?'S':''}`:'SIN BASES ÓPTIMAS';
 
-  const bestIdx = rows.reduce((bi, r, i) => r.tna > rows[bi].tna ? i : bi, 0);
-  const ejR = rows[bestIdx];
-  const chgPos = (stockChange || 0) >= 0;
+  aCard('aCard1','MEJOR TNA',
+    `$${fmt(ejR.strike,0)} · ${(ejR.tna*100).toFixed(1)}%`,
+    `Prima $${fmt(ejR.prima)} · Prot. ${ejR.protPct.toFixed(2)}%`,
+    'var(--green)');
 
-  // Update ticker strip
-  const strip = document.getElementById('tickerStrip');
-  strip.innerHTML = `
-    <div class="tick-item"><span class="tsym">${ticker}</span><span class="${chgPos?'tpos':'tneg'}">${fmt(stockPrice)} ${chgPos?'▲':'▼'}${Math.abs(stockChange||0).toFixed(2)}%</span></div>
-    <div class="tick-item"><span class="tsym">STRIKE</span><span class="tpos">$${fmt(ejR.strike,0)}</span></div>
-    <div class="tick-item"><span class="tsym">BEST TNA</span><span class="tpos">${(ejR.tna*100).toFixed(2)}%</span></div>
-    <div class="tick-item"><span class="tsym">EXPIRY</span><span>${expiryLabel}</span></div>
-    <div class="tick-item"><span class="tsym">DAYS</span><span>${dias}D</span></div>
-    <div class="tick-item"><span class="tsym">52W HI</span><span>${fmt(high52||0,0)}</span></div>
-    <div class="tick-item"><span class="tsym">52W LO</span><span>${fmt(low52||0,0)}</span></div>
-    <div class="tick-item"><span class="tsym">BE</span><span>${fmt(ejR.beLanzador)}</span></div>
-    <!-- dup -->
-    <div class="tick-item"><span class="tsym">${ticker}</span><span class="${chgPos?'tpos':'tneg'}">${fmt(stockPrice)} ${chgPos?'▲':'▼'}${Math.abs(stockChange||0).toFixed(2)}%</span></div>
-    <div class="tick-item"><span class="tsym">STRIKE</span><span class="tpos">$${fmt(ejR.strike,0)}</span></div>
-    <div class="tick-item"><span class="tsym">BEST TNA</span><span class="tpos">${(ejR.tna*100).toFixed(2)}%</span></div>
-    <div class="tick-item"><span class="tsym">EXPIRY</span><span>${expiryLabel}</span></div>
-    <div class="tick-item"><span class="tsym">DAYS</span><span>${dias}D</span></div>
-    <div class="tick-item"><span class="tsym">52W HI</span><span>${fmt(high52||0,0)}</span></div>
-    <div class="tick-item"><span class="tsym">52W LO</span><span>${fmt(low52||0,0)}</span></div>
-    <div class="tick-item"><span class="tsym">BE</span><span>${fmt(ejR.beLanzador)}</span></div>
-  `;
+  aCard('aCard2','MEJOR RATIO TNA/OTM',
+    `$${fmt(br.strike,0)} · ${br.ratioTnaOtm.toFixed(2)}x`,
+    `${(br.tna*100).toFixed(1)}% TNA por ${br.otmPct.toFixed(1)}% OTM`,
+    'var(--blue)');
 
-  document.getElementById('splash').style.display = 'none';
-  const res = document.getElementById('results');
-  res.style.display = 'flex';
+  aCard('aCard3','MAYOR PROTECCIÓN (TNA≥8%)',
+    `$${fmt(bp.strike,0)} · ${bp.protPct.toFixed(2)}%`,
+    `Baja hasta $${fmt(bp.beLanzador)} · TNA ${(bp.tna*100).toFixed(1)}%`,
+    'var(--yellow)');
 
-  res.innerHTML = `
-    <!-- QUOTE BAR -->
+  aCard('aCard4','BREAK-EVEN LANZADOR',
+    `$${fmt(ejR.beLanzador)}`,
+    `Caída máx. cubierta: $${fmt(ejR.protDolar)} (${ejR.protPct.toFixed(2)}%)`,
+    'var(--orange)');
+
+  aCard('aCard5','MÁX. GANANCIA (1 LOTE)',
+    `$${fmt(ejR.maxGain,0)}`,
+    `Strike $${fmt(ejR.strike,0)} · si se ejerce al vto.`,
+    'var(--green)');
+
+  const riesgoAnio=((stockPrice-ejR.beLanzador)/stockPrice*100);
+  const alertColor=riesgoAnio<3?'var(--green)':riesgoAnio<7?'var(--yellow)':'var(--red)';
+  aCard('aCard6','RIESGO SI BAJA MÁS DEL B/E',
+    `-${riesgoAnio.toFixed(1)}%`,
+    `Pérdida no cubierta por la prima`,
+    alertColor);
+
+  // Ticker strip
+  const strip=document.getElementById('tickerStrip');
+  const mk=(sym,val,cls)=>`<div class="tick-item"><span class="tsym">${sym}</span><span class="${cls}">${val}</span></div>`;
+  const items=[
+    mk(ticker,`${fmt(stockPrice)} ${chgPos?'▲':'▼'}${Math.abs(stockChange||0).toFixed(2)}%`,chgPos?'tpos':'tneg'),
+    mk('BEST STRIKE',`$${fmt(ejR.strike,0)}`,'tpos'),
+    mk('BEST TNA',`${(ejR.tna*100).toFixed(2)}%`,'tpos'),
+    mk('EXPIRY',expiryLabel,''),mk('DAYS',`${dias}D`,''),
+    mk('52W HI',`$${fmt(high52||0,0)}`,''),mk('52W LO',`$${fmt(low52||0,0)}`,''),
+    mk('B/E',`$${fmt(ejR.beLanzador)}`,'')
+  ].join('');
+  strip.innerHTML=items+items;
+
+  document.getElementById('splash').style.display='none';
+  const res=document.getElementById('results');
+  res.style.display='flex';
+
+  res.innerHTML=`
     <div class="quote-bar">
       <div class="q-ticker">${ticker}</div>
-      <div class="q-price">$${fmt(stockPrice)}</div>
-      <div class="q-chg ${chgPos?'pos':'neg'}">${chgPos?'▲':'▼'} ${Math.abs(stockChange||0).toFixed(2)}%</div>
+      <div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap">
+        <div class="q-price">$${fmt(stockPrice)}</div>
+        <div class="q-chg ${chgPos?'pos':'neg'}">${chgPos?'▲':'▼'} ${Math.abs(stockChange||0).toFixed(2)}%</div>
+      </div>
       <div class="q-stats">
-        <div class="q-stat">
-          <div class="q-stat-l">52W HIGH</div>
-          <div class="q-stat-v">$${fmt(high52||0,0)}</div>
-        </div>
-        <div class="q-stat">
-          <div class="q-stat-l">52W LOW</div>
-          <div class="q-stat-v">$${fmt(low52||0,0)}</div>
-        </div>
-        <div class="q-stat">
-          <div class="q-stat-l">EXPIRY</div>
-          <div class="q-stat-v" style="color:var(--orange)">${expiryLabel}</div>
-        </div>
-        <div class="q-stat">
-          <div class="q-stat-l">DAYS TO EXP</div>
-          <div class="q-stat-v" style="color:var(--blue)">${dias}D</div>
-        </div>
-        <div class="q-stat">
-          <div class="q-stat-l">BEST STRIKE</div>
-          <div class="q-stat-v" style="color:var(--green)">$${fmt(ejR.strike,0)}</div>
-        </div>
-        <div class="q-stat">
-          <div class="q-stat-l">BEST TNA</div>
-          <div class="q-stat-v" style="color:var(--green)">${(ejR.tna*100).toFixed(2)}%</div>
-        </div>
+        <div class="q-stat"><div class="q-stat-l">52W HIGH</div><div class="q-stat-v">$${fmt(high52||0,0)}</div></div>
+        <div class="q-stat"><div class="q-stat-l">52W LOW</div><div class="q-stat-v">$${fmt(low52||0,0)}</div></div>
+        <div class="q-stat"><div class="q-stat-l">EXPIRY</div><div class="q-stat-v" style="color:var(--orange)">${expiryLabel}</div></div>
+        <div class="q-stat"><div class="q-stat-l">DAYS</div><div class="q-stat-v" style="color:var(--blue)">${dias}D</div></div>
+        <div class="q-stat"><div class="q-stat-l">BEST STRIKE</div><div class="q-stat-v" style="color:var(--green)">$${fmt(ejR.strike,0)}</div></div>
+        <div class="q-stat"><div class="q-stat-l">BEST TNA</div><div class="q-stat-v" style="color:var(--green)">${(ejR.tna*100).toFixed(2)}%</div></div>
       </div>
     </div>
 
-    <!-- FORMULA BAR -->
     <div class="formula-bar">
       <span class="f-label">FORMULA</span>
-      <span class="f-eq">TNA = ((STRIKE + PRIMA) ÷ SPOT − 1) ÷ DÍAS × 365</span>
-      <span style="color:var(--muted)">|</span>
-      <span>BEST → $${fmt(ejR.strike,0)} + $${fmt(ejR.prima)} / $${fmt(stockPrice)} − 1 = ${(ejR.rendimiento*100).toFixed(2)}%</span>
+      <span class="f-eq">TNA = ((K+P)÷S−1)÷DÍAS×365</span>
+      <span class="f-mid">| BEST → $${fmt(ejR.strike,0)} + $${fmt(ejR.prima)} / $${fmt(stockPrice)} − 1 = ${(ejR.rendimiento*100).toFixed(2)}%</span>
       <span class="f-result">TNA ${(ejR.tna*100).toFixed(2)}%</span>
     </div>
 
-    <!-- TABLA + CHARTS -->
-    <div class="bb-grid">
+    <!-- ANALYSIS PANEL -->
+    <div id="analysisPanel" class="bb-panel" style="border-left:3px solid var(--orange)">
+      <div class="bb-panel-header">
+        <span class="bb-panel-title">⚡ ANALYSIS · BEST BASE TO LAUNCH</span>
+        <span class="bb-panel-sub" id="analysisSub"></span>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:1px;background:var(--border)">
+        <div id="aCard1" class="a-card"></div>
+        <div id="aCard2" class="a-card"></div>
+        <div id="aCard3" class="a-card"></div>
+        <div id="aCard4" class="a-card"></div>
+        <div id="aCard5" class="a-card"></div>
+        <div id="aCard6" class="a-card"></div>
+      </div>
+    </div>
 
-      <!-- TABLA -->
+    <div class="bb-grid">
       <div class="bb-panel">
         <div class="bb-panel-header">
           <span class="bb-panel-title">OTM CALLS · ${ticker} · ${expiryLabel}</span>
-          <span class="bb-panel-sub">10 NEAREST STRIKES</span>
+          <span class="bb-panel-sub">10 NEAREST STRIKES · SCROLL →</span>
         </div>
-        <div class="bb-panel-body">
+        <div class="tbl-outer">
           <table class="bb-table">
-            <thead>
-              <tr>
-                <th>STRIKE</th>
-                <th>%OTM</th>
-                <th>PRIMA</th>
-                <th>BID</th>
-                <th>ASK</th>
-                <th>REND%</th>
-                <th>TNA</th>
-                <th>B/E</th>
-                <th>VOL</th>
-                <th>OI</th>
-              </tr>
-            </thead>
+            <thead><tr><th>STRIKE</th><th>%OTM</th><th>PRIMA</th><th>PROT%</th><th>PROT$</th><th>REND%</th><th>TNA</th><th>RATIO</th><th>B/E</th><th>OI</th><th>SEÑAL</th></tr></thead>
             <tbody id="tbody"></tbody>
           </table>
         </div>
       </div>
-
-      <!-- CHARTS PANEL -->
-      <div style="display:flex;flex-direction:column;gap:8px">
+      <div style="display:flex;flex-direction:column;gap:6px">
         <div class="bb-panel">
           <div class="bb-panel-header">
             <span class="bb-panel-title">TNA % BY STRIKE</span>
-            <span class="bb-panel-sub">
-              <span style="color:var(--green)">■</span> ≥30%
-              <span style="color:var(--blue)">■</span> ≥15%
-              <span style="color:var(--yellow)">■</span> ≥8%
-            </span>
+            <span class="bb-panel-sub"><span style="color:var(--green)">■</span>≥30% <span style="color:var(--blue)">■</span>≥15% <span style="color:var(--yellow)">■</span>≥8%</span>
           </div>
-          <div class="ch-wrap">
-            <canvas id="chTNA" height="160"></canvas>
-          </div>
+          <div class="ch-wrap"><canvas id="chTNA" height="${mobile?110:155}"></canvas></div>
         </div>
         <div class="bb-panel">
           <div class="bb-panel-header">
-            <span class="bb-panel-title">P&L AT EXPIRY · $${fmt(rows[0].strike,0)} STRIKE</span>
-            <span class="bb-panel-sub">1 CONTRACT = 100 SHARES</span>
+            <span class="bb-panel-title">P&amp;L AT EXPIRY · $${fmt(rows[0].strike,0)}</span>
+            <span class="bb-panel-sub">1 CONTRACT · 100 SHARES</span>
           </div>
-          <div class="ch-wrap">
-            <canvas id="chPL" height="160"></canvas>
-          </div>
+          <div class="ch-wrap"><canvas id="chPL" height="${mobile?110:155}"></canvas></div>
         </div>
       </div>
+    </div>`;
 
-    </div>
-  `;
-
-  // TABLA
-  const tbody = document.getElementById('tbody');
-  rows.forEach((r, i) => {
-    const tr = document.createElement('tr');
-    if (i === bestIdx) tr.className = 'bb-best';
-    tr.innerHTML = `
-      <td>$${fmt(r.strike,0)} ${i===bestIdx?'★':''}</td>
-      <td style="color:var(--yellow)">+${r.otmPct.toFixed(1)}%</td>
-      <td style="color:var(--orange);font-weight:700">$${fmt(r.prima)}</td>
-      <td style="color:var(--muted)">${r.bid?'$'+fmt(r.bid):'—'}</td>
-      <td style="color:var(--muted)">${r.ask?'$'+fmt(r.ask):'—'}</td>
-      <td>${(r.rendimiento*100).toFixed(2)}%</td>
-      <td>${badge(r.tna)}</td>
-      <td style="color:var(--blue)">$${fmt(r.beLanzador)}</td>
-      <td style="color:var(--muted)">${r.volumen?parseInt(r.volumen).toLocaleString():'—'}</td>
-      <td style="color:var(--muted)">${r.oi?parseInt(r.oi).toLocaleString():'—'}</td>
-    `;
+  // Tabla
+  const tbody=document.getElementById('tbody');
+  rows.forEach((r,i)=>{
+    const tr=document.createElement('tr');
+    if(i===bestIdx)tr.className='bb-best';
+    const protColor = r.protPct>=2?'var(--green)':r.protPct>=1?'var(--yellow)':'var(--red)';
+    const ratioColor = r.ratioTnaOtm>=3?'var(--green)':r.ratioTnaOtm>=1.5?'var(--yellow)':'var(--muted)';
+    tr.innerHTML=`
+      <td data-label="STRIKE">$${fmt(r.strike,0)} ${i===bestIdx?'★':''}</td>
+      <td data-label="%OTM" style="color:var(--yellow)">+${r.otmPct.toFixed(1)}%</td>
+      <td data-label="PRIMA" style="color:var(--orange);font-weight:700">$${fmt(r.prima)}</td>
+      <td data-label="PROT%" style="color:${protColor};font-weight:700">${r.protPct.toFixed(2)}%</td>
+      <td data-label="PROT$" style="color:${protColor}">$${fmt(r.protDolar)}</td>
+      <td data-label="REND%">${(r.rendimiento*100).toFixed(2)}%</td>
+      <td data-label="TNA">${badge(r.tna)}</td>
+      <td data-label="RATIO" style="color:${ratioColor};font-weight:700">${r.ratioTnaOtm.toFixed(2)}x</td>
+      <td data-label="B/E" style="color:var(--blue)">$${fmt(r.beLanzador)}</td>
+      <td data-label="OI" style="color:var(--muted)">${r.oi?parseInt(r.oi).toLocaleString():'—'}</td>
+      <td data-label="SEÑAL">${señal(r.tna,r.protPct,r.oi,r.otmPct)}</td>`;
     tbody.appendChild(tr);
   });
 
-  // CHART TNA
+  // Chart TNA
   dc('c1');
-  const tnaVals = rows.map(r => parseFloat((r.tna*100).toFixed(2)));
-  charts['c1'] = new Chart(document.getElementById('chTNA'), {
-    type: 'bar',
-    data: {
-      labels: rows.map(r => '$'+fmt(r.strike,0)),
-      datasets: [{
-        data: tnaVals,
-        backgroundColor: tnaVals.map(v => v>=30?'rgba(0,192,75,0.7)':v>=15?'rgba(0,168,224,0.7)':v>=8?'rgba(255,204,0,0.7)':'rgba(232,0,45,0.6)'),
-        borderColor:     tnaVals.map(v => v>=30?'#00c04b':v>=15?'#00a8e0':v>=8?'#ffcc00':'#e8002d'),
-        borderWidth: 1, borderRadius: 0
-      }]
-    },
-    options: { ...CHART_OPTS,
-      plugins: { ...CHART_OPTS.plugins, tooltip: { callbacks: { label: ctx => ctx.raw+'% TNA' } } },
-      scales: { ...CHART_OPTS.scales,
-        y: { ...CHART_OPTS.scales.y, ticks: { ...CHART_OPTS.scales.y.ticks, callback: v => v+'%' } }
-      }
-    }
+  const tnaVals=rows.map(r=>parseFloat((r.tna*100).toFixed(2)));
+  charts['c1']=new Chart(document.getElementById('chTNA'),{
+    type:'bar',
+    data:{labels:rows.map(r=>'$'+fmt(r.strike,0)),datasets:[{
+      data:tnaVals,
+      backgroundColor:tnaVals.map(v=>v>=30?'rgba(0,192,75,.7)':v>=15?'rgba(0,168,224,.7)':v>=8?'rgba(255,204,0,.7)':'rgba(232,0,45,.6)'),
+      borderColor:tnaVals.map(v=>v>=30?'#00c04b':v>=15?'#00a8e0':v>=8?'#ffcc00':'#e8002d'),
+      borderWidth:1,borderRadius:0
+    }]},
+    options:{...COPTS,plugins:{...COPTS.plugins,tooltip:{callbacks:{label:ctx=>ctx.raw+'% TNA'}}},
+      scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>v+'%'}}}}
   });
 
-  // CHART P&L
+  // Chart P&L
   dc('c2');
-  const S=stockPrice, K=rows[0].strike, P=rows[0].prima;
-  const plL=[], plV=[];
-  for (let p=S*0.78; p<=S*1.22; p+=S*0.44/50) {
-    plL.push('$'+fmt(p,0));
-    plV.push(parseFloat((Math.min(K-S+P, p-S+P)*100).toFixed(0)));
-  }
-  charts['c2'] = new Chart(document.getElementById('chPL'), {
-    type: 'line',
-    data: {
-      labels: plL,
-      datasets: [
-        { data: plV, borderColor:'#f5821f', segment:{borderColor:ctx=>ctx.p0.parsed.y<0?'#e8002d':'#f5821f'}, backgroundColor:'rgba(245,130,31,0.05)', borderWidth:2, pointRadius:0, fill:true, tension:0.1 },
-        { data: Array(plL.length).fill(0), borderColor:'rgba(255,255,255,0.1)', borderWidth:1, pointRadius:0, fill:false }
-      ]
-    },
-    options: { ...CHART_OPTS,
-      plugins: { ...CHART_OPTS.plugins, tooltip:{callbacks:{label:ctx=>'$'+parseFloat(ctx.raw).toLocaleString()+' P&L'}} },
-      scales: { ...CHART_OPTS.scales,
-        y: { ...CHART_OPTS.scales.y, ticks:{...CHART_OPTS.scales.y.ticks, callback:v=>'$'+v} }
-      }
-    }
+  const S=stockPrice,K=rows[0].strike,P=rows[0].prima;
+  const plL=[],plV=[];
+  for(let p=S*.78;p<=S*1.22;p+=S*.44/50){plL.push('$'+fmt(p,0));plV.push(parseFloat((Math.min(K-S+P,p-S+P)*100).toFixed(0)));}
+  charts['c2']=new Chart(document.getElementById('chPL'),{
+    type:'line',
+    data:{labels:plL,datasets:[
+      {data:plV,borderColor:'#f5821f',segment:{borderColor:ctx=>ctx.p0.parsed.y<0?'#e8002d':'#f5821f'},backgroundColor:'rgba(245,130,31,.05)',borderWidth:2,pointRadius:0,fill:true,tension:.1},
+      {data:Array(plL.length).fill(0),borderColor:'rgba(255,255,255,.1)',borderWidth:1,pointRadius:0,fill:false}
+    ]},
+    options:{...COPTS,plugins:{...COPTS.plugins,tooltip:{callbacks:{label:ctx=>'$'+parseFloat(ctx.raw).toLocaleString()+' P&L'}}},
+      scales:{...COPTS.scales,y:{...COPTS.scales.y,ticks:{...COPTS.scales.y.ticks,callback:v=>'$'+v}}}}
   });
 }
 </script>
