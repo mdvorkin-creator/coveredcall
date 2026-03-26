@@ -166,12 +166,23 @@ html,body{background:var(--bb);color:var(--text);font-family:'IBM Plex Mono',mon
 
 <div class="bb-toolbar">
   <span class="bb-toolbar-label">TICKER</span>
-  <input class="bb-input ticker" id="ticker" value="META" maxlength="6" oninput="this.value=this.value.toUpperCase()" autocomplete="off" autocorrect="off" spellcheck="false">
+  <input class="bb-input ticker" id="ticker" value="META" maxlength="6"
+    oninput="this.value=this.value.toUpperCase()"
+    onblur="cargarFechas()"
+    onkeydown="if(event.key==='Enter'||event.key==='Tab')cargarFechas()"
+    autocomplete="off" autocorrect="off" spellcheck="false">
   <div class="bb-sep"></div>
   <span class="bb-toolbar-label">EXPIRY</span>
-  <input class="bb-input date" id="expiryIn" type="date" value="2026-04-17">
+  <div style="position:relative;display:flex;align-items:center;gap:6px">
+    <select class="bb-input" id="expirySelect" style="width:230px;font-size:10px;color:var(--white);cursor:pointer;display:none" onchange="onExpiryChange()">
+      <option value="">— seleccioná fecha —</option>
+    </select>
+    <input class="bb-input date" id="expiryIn" type="date" value="2026-04-17" style="display:none">
+    <span id="expiryLoading" style="font-size:9px;color:var(--muted);display:none">cargando fechas...</span>
+    <span id="expiryHint" style="font-size:9px;color:var(--muted)">↑ ingresá ticker primero</span>
+  </div>
   <div class="bb-sep"></div>
-  <button class="bb-btn" id="btnBuscar" onclick="buscar()">GO &lt;GO&gt;</button>
+  <button class="bb-btn" id="btnBuscar" onclick="buscar()" disabled style="opacity:0.4">GO &lt;GO&gt;</button>
   <span class="bb-status st-idle" id="pill">WAITING</span>
 </div>
 
@@ -243,10 +254,69 @@ const COPTS={
   }
 };
 
+async function cargarFechas(){
+  const ticker = document.getElementById('ticker').value.toUpperCase().trim();
+  if (!ticker || ticker.length < 1) return;
+
+  const sel     = document.getElementById('expirySelect');
+  const inp     = document.getElementById('expiryIn');
+  const loading = document.getElementById('expiryLoading');
+  const hint    = document.getElementById('expiryHint');
+  const btn     = document.getElementById('btnBuscar');
+
+  // Show loading
+  sel.style.display = 'none';
+  inp.style.display = 'none';
+  hint.style.display = 'none';
+  loading.style.display = 'inline';
+  btn.disabled = true; btn.style.opacity = '0.4';
+
+  try {
+    const res  = await fetch(`/.netlify/functions/get-expiries?ticker=${ticker}`);
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+
+    // Populate select
+    sel.innerHTML = '<option value="">— seleccioná fecha —</option>';
+    data.expiries.forEach(e => {
+      const opt = document.createElement('option');
+      opt.value = e.date;
+      const volTag = e.topVol ? ' ★ VOL ALTO' : '';
+      opt.textContent = `${e.label} (${e.dias}d)${volTag}`;
+      if (e.topVol) opt.style.color = '#00c04b';
+      sel.appendChild(opt);
+    });
+
+    loading.style.display = 'none';
+    sel.style.display = 'block';
+    hint.style.display = 'none';
+
+  } catch(err) {
+    // Fallback to manual date input
+    loading.style.display = 'none';
+    inp.style.display = 'block';
+    hint.style.display = 'none';
+    btn.disabled = false; btn.style.opacity = '1';
+  }
+}
+
+function onExpiryChange(){
+  const sel = document.getElementById('expirySelect');
+  const btn = document.getElementById('btnBuscar');
+  if (sel.value) {
+    btn.disabled = false; btn.style.opacity = '1';
+  } else {
+    btn.disabled = true; btn.style.opacity = '0.4';
+  }
+}
+
 async function buscar(){
   const ticker=document.getElementById('ticker').value.toUpperCase().trim();
-  const expiry=document.getElementById('expiryIn').value;
-  if(!ticker||!expiry){alert('Enter ticker and expiry');return;}
+  const sel=document.getElementById('expirySelect');
+  const inp=document.getElementById('expiryIn');
+  const expiry=sel.style.display!=='none'?sel.value:inp.value;
+  if(!ticker){alert('Enter ticker');return;}
+  if(!expiry){alert('Seleccioná una fecha de vencimiento');return;}
   const btn=document.getElementById('btnBuscar');
   btn.disabled=true; setStatus('LOADING...','loading');
   document.getElementById('splash').style.display='flex';
