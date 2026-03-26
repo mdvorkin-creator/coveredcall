@@ -230,38 +230,49 @@ async function fetchData() {
     <div class="splash-icon">⏳</div>
     <div class="splash-title">Buscando ${ticker}...</div>
     <div class="loading-bar"></div>
-    <div class="splash-sub">Obteniendo precio actual y las 10 bases OTM<br>para el vencimiento seleccionado.</div>
+    <div class="splash-sub">Obteniendo precio y cadena de opciones...</div>
   `;
   document.getElementById('results').style.display = 'none';
 
   const DIAS = diasHasta(expiry);
   const expDate = new Date(expiry + 'T00:00:00');
   const expLabel = expDate.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
-
-  const prompt = `${ticker} options calls ${expLabel} OTM prices. Return ONLY JSON: {"ticker":"${ticker}","stockPrice":0,"stockChange":0,"high52":0,"low52":0,"expiryLabel":"${expLabel}","dias":${DIAS},"calls":[{"strike":0,"prima":0,"bid":0,"ask":0,"volumen":0,"oi":0}]}. Rules: calls=10 OTM CALLs strike>stockPrice sorted asc, prima=last price or mid(bid,ask), JSON only no markdown.`;
+  const expTimestamp = Math.floor(expDate.getTime() / 1000);
 
   try {
-    const res = await fetch('/.netlify/functions/claude-proxy', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'claude-sonnet-4-20250514',
-        max_tokens: 2000,
-        tools: [{ type: 'web_search_20250305', name: 'web_search' }],
-        messages: [{ role: 'user', content: prompt }]
-      })
-    });
+    // ── 1. Precio de la acción via Yahoo Finance (sin CORS gracias a proxy)
+    const quoteRes = await fetch(`/.netlify/functions/yahoo-quote?ticker=${ticker}`);
+    if (!quoteRes.ok) throw new Error('No se pudo obtener el precio de ' + ticker);
+    const quoteData = await quoteRes.json();
+    if (quoteData.error) throw new Error(quoteData.error);
 
-    const data = await res.json();
-    if (data.error) throw new Error(data.error);
+    // ── 2. Cadena de opciones via Yahoo Finance
+    const optRes = await fetch(`/.netlify/functions/yahoo-options?ticker=${ticker}&date=${expTimestamp}`);
+    if (!optRes.ok) throw new Error('No se pudo obtener opciones de ' + ticker);
+    const optData = await optRes.json();
+    if (optData.error) throw new Error(optData.error);
 
-    let rawText = '';
-    for (const b of data.content) { if (b.type === 'text') rawText += b.text; }
+    const stockPrice = quoteData.price;
 
-    const match = rawText.replace(/```json|```/g, '').trim().match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('No se pudo parsear la respuesta de la IA');
+    // Filtrar calls OTM, ordenar, tomar primeras 10
+    const calls = (optData.calls || [])
+      .filter(c => c.strike > stockPrice && c.prima > 0)
+      .sort((a, b) => a.strike - b.strike)
+      .slice(0, 10);
 
-    const parsed = JSON.parse(match[0]);
+    if (calls.length === 0) throw new Error('No hay calls OTM con precio para ese vencimiento. Probá otra fecha.');
+
+    const parsed = {
+      ticker,
+      stockPrice,
+      stockChange: quoteData.change || 0,
+      high52: quoteData.high52 || 0,
+      low52: quoteData.low52 || 0,
+      expiryLabel,
+      dias: DIAS,
+      calls
+    };
+
     setStatus(`${ticker} · $${fmt(parsed.stockPrice)}`, 'ok');
     btn.disabled = false;
     render(parsed);
